@@ -2,9 +2,13 @@ package pl.digsa.flutter_arb_action
 
 import com.intellij.codeInsight.intention.IntentionAction
 import com.intellij.codeInsight.intention.PsiElementBaseIntentionAction
+import com.intellij.json.JsonFileType
+import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiElement
+import com.intellij.psi.search.FileTypeIndex
+import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.psi.util.childrenOfType
 import com.intellij.psi.util.parentOfType
@@ -12,6 +16,7 @@ import com.intellij.ui.components.JBTextField
 import com.intellij.ui.dsl.builder.Cell
 import com.intellij.ui.dsl.builder.LabelPosition
 import com.intellij.ui.dsl.builder.panel
+import com.jetbrains.lang.dart.DartFileType
 import com.jetbrains.lang.dart.psi.DartExpression
 import com.jetbrains.lang.dart.psi.DartFile
 import com.jetbrains.lang.dart.psi.DartImportStatement
@@ -46,28 +51,36 @@ class ReplaceStringWithTranslationIntention : PsiElementBaseIntentionAction(), I
 
         val localizationVariableName = getNewVariableName() ?: return
 
+        project.addToArbFile()
+
         element.addImport("import 'package:app/extensions/context_extensions.dart';")
         stringElementToReplace.replaceWithNewReference("$contextParameterName.text.$localizationVariableName")
     }
 
-    private fun DartStringLiteralExpression.replaceWithNewReference(reference: String    ) {
+    private fun Project.addToArbFile() {
+        val files = FileTypeIndex.getFiles(JsonFileType.INSTANCE, GlobalSearchScope.allScope(this))
+        println(files.map { it.name })
+    }
+
+    private fun DartStringLiteralExpression.replaceWithNewReference(reference: String) = WriteCommandAction.runWriteCommandAction(this.project) {
         val replacementVersion: DartExpression = DartElementGenerator.createExpressionFromText(
             this.project,
             reference
-        ) ?: return
+        ) ?: return@runWriteCommandAction
         this.replace(replacementVersion)
     }
 
-    private fun PsiElement.addImport(import: String) {
-        val importStatement =
-            DartElementGenerator.createDummyFile(
-                project,
-                import
-            ).firstChild
-        val dartFile = parentOfType<DartFile>()
-        val lastImportStatement = dartFile?.childrenOfType<DartImportStatement>()?.last()
-        dartFile?.addAfter(importStatement, lastImportStatement)
-    }
+    private fun PsiElement.addImport(import: String): Unit =
+        WriteCommandAction.runWriteCommandAction(this.project) {
+            val importStatement =
+                DartElementGenerator.createDummyFile(
+                    this.project,
+                    import
+                ).firstChild
+            val dartFile = this.parentOfType<DartFile>()
+            val lastImportStatement = dartFile?.childrenOfType<DartImportStatement>()?.last()
+            dartFile?.addAfter(importStatement, lastImportStatement)
+        }
 
     private fun getNewVariableName(): String? {
         lateinit var resourceName: Cell<JBTextField>
@@ -80,8 +93,9 @@ class ReplaceStringWithTranslationIntention : PsiElementBaseIntentionAction(), I
         val popup = PanelDialog(panel, "Name arb variable")
         popup.setOkText("Apply")
         val isGenerate = popup.showAndGet()
-        return if(isGenerate) resourceName.component.text else null
+        return if (isGenerate) resourceName.component.text else null
     }
 
     override fun startInWriteAction(): Boolean = false
 }
+
