@@ -17,7 +17,7 @@ intellij {
     version.set("2022.2.4")
     type.set("IC") // Target IDE Platform
 
-    plugins.set(listOf("Dart:222.4582"))
+    plugins.set(listOf("Dart:222.4582", "com.localizely.flutter-intl:1.18.4-2022.2"))
 }
 
 tasks {
