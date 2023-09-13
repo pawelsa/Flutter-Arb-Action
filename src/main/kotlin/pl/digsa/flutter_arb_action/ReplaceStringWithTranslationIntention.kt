@@ -8,7 +8,6 @@ import com.intellij.psi.PsiElement
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.psi.util.childrenOfType
 import com.intellij.psi.util.parentOfType
-import com.intellij.psi.util.parents
 import com.intellij.ui.components.JBTextField
 import com.intellij.ui.dsl.builder.Cell
 import com.intellij.ui.dsl.builder.LabelPosition
@@ -43,9 +42,34 @@ class ReplaceStringWithTranslationIntention : PsiElementBaseIntentionAction(), I
 
     override fun invoke(project: Project, editor: Editor?, element: PsiElement) {
         val contextParameterName = getBuildContextParameter(element)?.componentName?.text ?: return
-        val stringLiteralExpression = getStringLiteralExpression(element) ?: return
+        val stringElementToReplace = getStringLiteralExpression(element) ?: return
 
+        val localizationVariableName = getNewVariableName() ?: return
 
+        element.addImport("import 'package:app/extensions/context_extensions.dart';")
+        stringElementToReplace.replaceWithNewReference("$contextParameterName.text.$localizationVariableName")
+    }
+
+    private fun DartStringLiteralExpression.replaceWithNewReference(reference: String    ) {
+        val replacementVersion: DartExpression = DartElementGenerator.createExpressionFromText(
+            this.project,
+            reference
+        ) ?: return
+        this.replace(replacementVersion)
+    }
+
+    private fun PsiElement.addImport(import: String) {
+        val importStatement =
+            DartElementGenerator.createDummyFile(
+                project,
+                import
+            ).firstChild
+        val dartFile = parentOfType<DartFile>()
+        val lastImportStatement = dartFile?.childrenOfType<DartImportStatement>()?.last()
+        dartFile?.addAfter(importStatement, lastImportStatement)
+    }
+
+    private fun getNewVariableName(): String? {
         lateinit var resourceName: Cell<JBTextField>
         val panel = panel {
             row {
@@ -56,23 +80,7 @@ class ReplaceStringWithTranslationIntention : PsiElementBaseIntentionAction(), I
         val popup = PanelDialog(panel, "Name arb variable")
         popup.setOkText("Apply")
         val isGenerate = popup.showAndGet()
-        if (!isGenerate)
-            return
-
-        val importStatement =
-            DartElementGenerator.createDummyFile(
-                project,
-                "import 'package:app/extensions/context_extensions.dart';"
-            ).firstChild
-        val dartFile = element.parentOfType<DartFile>()
-        val lastImportStatement = dartFile?.childrenOfType<DartImportStatement>()?.last()
-        dartFile?.addAfter(importStatement, lastImportStatement)
-
-        val replacementVersion: DartExpression = DartElementGenerator.createExpressionFromText(
-            project,
-            "$contextParameterName.text.${resourceName.component.text}"
-        ) ?: return
-        stringLiteralExpression.replace(replacementVersion)
+        return if(isGenerate) resourceName.component.text else null
     }
 
     override fun startInWriteAction(): Boolean = false
