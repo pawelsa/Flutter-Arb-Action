@@ -9,25 +9,21 @@ import com.intellij.json.psi.JsonPsiUtil
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.ui.ValidationInfo
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiManager
 import com.intellij.psi.search.FileTypeIndex
 import com.intellij.psi.search.GlobalSearchScope
-import com.intellij.psi.util.*
+import com.intellij.psi.util.PsiTreeUtil
+import com.intellij.psi.util.childrenOfType
+import com.intellij.psi.util.parentOfType
 import com.intellij.ui.components.JBTextField
 import com.intellij.ui.dsl.builder.Cell
 import com.intellij.ui.dsl.builder.LabelPosition
 import com.intellij.ui.dsl.builder.panel
-import com.jetbrains.lang.dart.DartElementType
-import com.jetbrains.lang.dart.psi.DartExpression
-import com.jetbrains.lang.dart.psi.DartFile
-import com.jetbrains.lang.dart.psi.DartImportStatement
-import com.jetbrains.lang.dart.psi.DartMethodDeclaration
-import com.jetbrains.lang.dart.psi.DartSimpleFormalParameter
-import com.jetbrains.lang.dart.psi.DartStringLiteralExpression
+import com.jetbrains.lang.dart.psi.*
 import com.jetbrains.lang.dart.util.DartElementGenerator
 import com.localizely.flutter.intl.files.ArbFileType
-import java.lang.annotation.ElementType
 
 
 @Suppress("IntentionDescriptionNotFoundInspection")
@@ -106,14 +102,20 @@ class ReplaceStringWithTranslationIntention : PsiElementBaseIntentionAction(), I
         lateinit var resourceName: Cell<JBTextField>
         val panel = panel {
             row {
-                resourceName = textField().label("Variable name", LabelPosition.TOP)
+                resourceName = textField().label("Variable name", LabelPosition.TOP).focused().validation {
+                    if (it.text.isEmpty()) return@validation ValidationInfo("Field cannot be empty")
+                    if (it.text.trim()
+                            .contains(" ")
+                    ) return@validation ValidationInfo("Field cannot contain white spaces")
+                    null
+                }
             }
         }
 
         val popup = PanelDialog(panel, "Name arb variable")
         popup.setOkText("Apply")
         val isGenerate = popup.showAndGet()
-        return if (isGenerate) resourceName.component.text else null
+        return if (isGenerate) resourceName.component.text.trim() else null
     }
 
     private fun Project.writeFile(action: () -> Unit) = WriteCommandAction.runWriteCommandAction(this, action)
