@@ -5,6 +5,7 @@ import com.intellij.codeInsight.intention.PsiElementBaseIntentionAction
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiElement
+import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.psi.util.childrenOfType
 import com.intellij.psi.util.parentOfType
 import com.intellij.psi.util.parents
@@ -31,18 +32,17 @@ class ReplaceStringWithTranslationIntention : PsiElementBaseIntentionAction(), I
         getStringLiteralExpression(element) != null && getBuildContextParameter(element) != null
 
     private fun getStringLiteralExpression(element: PsiElement): DartStringLiteralExpression? =
-        element.parents(true).firstIsInstanceOrNull<DartStringLiteralExpression>()
+        PsiTreeUtil.getParentOfType(element, DartStringLiteralExpression::class.java)
 
     private fun getBuildContextParameter(element: PsiElement): DartSimpleFormalParameter? {
-        val methodDeclaration = element.parents(false).firstIsInstanceOrNull<DartMethodDeclaration>() ?: return null
-        val normalFormalParameters = methodDeclaration.formalParameterList.normalFormalParameterList
-        return normalFormalParameters.firstOrNull { normalElement ->
-            normalElement.simpleFormalParameter?.text?.startsWith("BuildContext") ?: false
+        val methodDeclaration = PsiTreeUtil.getParentOfType(element, DartMethodDeclaration::class.java)
+        return methodDeclaration?.formalParameterList?.normalFormalParameterList?.firstOrNull {
+            it.simpleFormalParameter?.type?.simpleType?.text == "BuildContext"
         }?.simpleFormalParameter
     }
 
     override fun invoke(project: Project, editor: Editor?, element: PsiElement) {
-        val contextParameterName = getBuildContextParameter(element)?.text?.split(" ")?.last() ?: return
+        val contextParameterName = getBuildContextParameter(element)?.componentName?.text ?: return
         val stringLiteralExpression = getStringLiteralExpression(element) ?: return
 
 
@@ -74,4 +74,6 @@ class ReplaceStringWithTranslationIntention : PsiElementBaseIntentionAction(), I
         ) ?: return
         stringLiteralExpression.replace(replacementVersion)
     }
+
+    override fun startInWriteAction(): Boolean = false
 }
