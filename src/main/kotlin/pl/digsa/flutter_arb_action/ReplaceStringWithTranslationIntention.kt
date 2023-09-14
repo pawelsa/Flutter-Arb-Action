@@ -124,5 +124,6 @@ class ReplaceStringWithTranslationIntention : PsiElementBaseIntentionAction(), I
     private fun Project.writeFile(action: () -> Unit) = WriteCommandAction.runWriteCommandAction(this, action)
 
     override fun startInWriteAction(): Boolean = false
+
 }
 
