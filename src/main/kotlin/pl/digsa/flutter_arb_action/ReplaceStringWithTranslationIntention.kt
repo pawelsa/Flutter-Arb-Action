@@ -24,6 +24,7 @@ import com.intellij.ui.dsl.builder.panel
 import com.jetbrains.lang.dart.psi.*
 import com.jetbrains.lang.dart.util.DartElementGenerator
 import com.localizely.flutter.intl.files.ArbFileType
+import pl.digsa.flutter_arb_action.settings.ArbPluginSettingsState
 
 
 @Suppress("IntentionDescriptionNotFoundInspection")
@@ -54,8 +55,9 @@ class ReplaceStringWithTranslationIntention : PsiElementBaseIntentionAction(), I
 
         project.addToArbFile(localizationVariableName, localizationValue)
 
-        element.addImport("import 'package:app/extensions/context_extensions.dart';")
-        stringElementToReplace.replaceWithNewReference("$contextParameterName.text.$localizationVariableName")
+        val (import, extensionName) = project.readUserDefinedParametersSettings()
+        element.addImport(import)
+        stringElementToReplace.replaceWithNewReference("$contextParameterName.$extensionName.$localizationVariableName")
     }
 
     private fun getLocalizationValue(stringElementToReplace: DartStringLiteralExpression) =
@@ -79,6 +81,9 @@ class ReplaceStringWithTranslationIntention : PsiElementBaseIntentionAction(), I
         resourceName: String,
         value: String
     ) = JsonElementGenerator(this).createProperty(resourceName, value)
+
+    private fun Project.readUserDefinedParametersSettings() =
+        getService(ArbPluginSettingsState::class.java).state.run { importPath to extensionName }
 
     private fun DartStringLiteralExpression.replaceWithNewReference(reference: String) = this.project.writeFile {
         val replacementVersion: DartExpression = DartElementGenerator.createExpressionFromText(
@@ -126,4 +131,5 @@ class ReplaceStringWithTranslationIntention : PsiElementBaseIntentionAction(), I
     override fun startInWriteAction(): Boolean = false
 
 }
+
 
