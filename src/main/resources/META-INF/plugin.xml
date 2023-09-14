@@ -20,6 +20,7 @@
     <depends>com.intellij.modules.platform</depends>
     <depends>Dart</depends>
     <depends>com.localizely.flutter-intl</depends>
+    <depends>org.jetbrains.plugins.yaml</depends>
     <!-- Extension points defined by the plugin.
          Read more: https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
     <extensions defaultExtensionNs="com.intellij">

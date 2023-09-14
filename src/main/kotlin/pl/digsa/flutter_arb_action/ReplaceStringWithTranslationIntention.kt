@@ -2,18 +2,14 @@ package pl.digsa.flutter_arb_action
 
 import com.intellij.codeInsight.intention.IntentionAction
 import com.intellij.codeInsight.intention.PsiElementBaseIntentionAction
-import com.intellij.json.psi.JsonElementGenerator
 import com.intellij.json.psi.JsonFile
 import com.intellij.json.psi.JsonObject
 import com.intellij.json.psi.JsonPsiUtil
-import com.intellij.openapi.command.WriteCommandAction
+import com.intellij.json.psi.JsonValue
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ValidationInfo
 import com.intellij.psi.PsiElement
-import com.intellij.psi.PsiManager
-import com.intellij.psi.search.FileTypeIndex
-import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.psi.util.childrenOfType
 import com.intellij.psi.util.parentOfType
@@ -23,7 +19,8 @@ import com.intellij.ui.dsl.builder.LabelPosition
 import com.intellij.ui.dsl.builder.panel
 import com.jetbrains.lang.dart.psi.*
 import com.jetbrains.lang.dart.util.DartElementGenerator
-import com.localizely.flutter.intl.files.ArbFileType
+import org.jetbrains.yaml.psi.YAMLFile
+import org.jetbrains.yaml.psi.YAMLMapping
 import pl.digsa.flutter_arb_action.settings.ArbPluginSettingsState
 
 
@@ -65,11 +62,9 @@ class ReplaceStringWithTranslationIntention : PsiElementBaseIntentionAction(), I
             "\"${it.substring(1, it.length - 1)}\""
         }
 
+
     private fun Project.addToArbFile(resourceName: String, value: String) {
-        val file = FileTypeIndex.getFiles(ArbFileType(), GlobalSearchScope.projectScope(this)).firstOrNull() ?: return
-        val arbFile: JsonFile =
-            PsiManager.getInstance(this).findFile(file)?.let { if (it is JsonFile) it else null } ?: return
-        val jsonObject = arbFile.topLevelValue
+        val jsonObject = arbTopLevelValue ?: return
         if (jsonObject !is JsonObject) return
 
         writeFile {
@@ -77,21 +72,18 @@ class ReplaceStringWithTranslationIntention : PsiElementBaseIntentionAction(), I
         }
     }
 
-    private fun Project.createJsonProperty(
-        resourceName: String,
-        value: String
-    ) = JsonElementGenerator(this).createProperty(resourceName, value)
+    private val Project.arbTopLevelValue: JsonValue?
+        get() {
+            val intlConfig = firstFileByName<YAMLFile>("l10n.yaml") ?: return null
+            val arbFileName = getArbFileNameFromIntlConfig(intlConfig) ?: return null
+            return firstFileByName<JsonFile>(arbFileName)?.topLevelValue
+        }
+
+    private fun getArbFileNameFromIntlConfig(intlConfig: YAMLFile) =
+        (intlConfig.documents.firstOrNull()?.topLevelValue as YAMLMapping).keyValues.firstOrNull { it.keyText == "template-arb-file" }?.valueText
 
     private fun Project.readUserDefinedParametersSettings() =
         getService(ArbPluginSettingsState::class.java).state.run { importPath to extensionName }
-
-    private fun DartStringLiteralExpression.replaceWithNewReference(reference: String) = this.project.writeFile {
-        val replacementVersion: DartExpression = DartElementGenerator.createExpressionFromText(
-            this.project,
-            reference
-        ) ?: return@writeFile
-        this.replace(replacementVersion)
-    }
 
     private fun PsiElement.addImport(import: String): Unit = this.project.writeFile {
         val dartFile = this.parentOfType<DartFile>() ?: return@writeFile
@@ -125,8 +117,6 @@ class ReplaceStringWithTranslationIntention : PsiElementBaseIntentionAction(), I
         val isGenerate = popup.showAndGet()
         return if (isGenerate) resourceName.component.text.trim() else null
     }
-
-    private fun Project.writeFile(action: () -> Unit) = WriteCommandAction.runWriteCommandAction(this, action)
 
     override fun startInWriteAction(): Boolean = false
 
