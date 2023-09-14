@@ -29,5 +29,13 @@
             <category>Flutter resources</category>
         </intentionAction>
 
+        <projectService serviceImplementation="pl.digsa.flutter_arb_action.settings.ArbPluginSettingsState"/>
+
+        <projectConfigurable
+                parentId="tools"
+                instance="pl.digsa.flutter_arb_action.settings.ArbPluginSettingsConfigurable"
+                id="pl.digsa.flutter_arb_action.settings.ArbPluginSettingsConfigurable"
+                displayName="Flutter Arb Action"/>
+
     </extensions>
 </idea-plugin>
