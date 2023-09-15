@@ -5,7 +5,6 @@ import com.intellij.codeInsight.intention.PsiElementBaseIntentionAction
 import com.intellij.json.psi.JsonFile
 import com.intellij.json.psi.JsonObject
 import com.intellij.json.psi.JsonPsiUtil
-import com.intellij.json.psi.JsonValue
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ValidationInfo
@@ -31,55 +30,94 @@ class ReplaceStringWithTranslationIntention : PsiElementBaseIntentionAction(), I
     override fun getText(): String = "Move to arb file"
 
     override fun isAvailable(project: Project, editor: Editor?, element: PsiElement): Boolean =
-        getStringLiteralExpression(element) != null && getBuildContextParameter(element) != null
+        element.findStringLiteralExpressionInParentOrNull() != null && element.findBuildContextInParentOrNull() != null
 
-    private fun getStringLiteralExpression(element: PsiElement): DartStringLiteralExpression? =
-        PsiTreeUtil.getParentOfType(element, DartStringLiteralExpression::class.java)
+    private fun PsiElement.findStringLiteralExpressionInParentOrNull(): DartStringLiteralExpression? =
+        PsiTreeUtil.getParentOfType(this, DartStringLiteralExpression::class.java)
 
-    private fun getBuildContextParameter(element: PsiElement): DartSimpleFormalParameter? {
-        val methodDeclaration = PsiTreeUtil.getParentOfType(element, DartMethodDeclaration::class.java)
+    private fun PsiElement.findBuildContextInParentOrNull(): DartSimpleFormalParameter? {
+        val methodDeclaration = PsiTreeUtil.getParentOfType(this, DartMethodDeclaration::class.java)
         return methodDeclaration?.formalParameterList?.normalFormalParameterList?.firstOrNull {
             it.simpleFormalParameter?.type?.simpleType?.text == "BuildContext"
         }?.simpleFormalParameter
     }
 
     override fun invoke(project: Project, editor: Editor?, element: PsiElement) {
-        val contextParameterName = getBuildContextParameter(element)?.componentName?.text ?: return
-        val stringElementToReplace = getStringLiteralExpression(element) ?: return
-        val localizationValue = getLocalizationValue(stringElementToReplace)
+        val contextParameterName = element.findBuildContextInParentOrNull()?.componentName?.text ?: return
+        val stringElementToReplace = element.findStringLiteralExpressionInParentOrNull() ?: return
+        val arbContent = project.getArbObjectOrNull() ?: return
 
-        val arbContent = project.arbTopLevelValue ?: return
-        if (arbContent !is JsonObject) return
+        val refactorArguments = getRefactorArguments(stringElementToReplace, arbContent) ?: return
 
-        val localizationVariableName = getNewVariableName(arbContent) ?: return
-
-        project.addToArbFile(arbContent, localizationVariableName, localizationValue)
+        project.modifyArbFileContent(arbContent, refactorArguments)
 
         val (import, extensionName) = project.readUserDefinedParametersSettings()
         element.addImport(import)
-        stringElementToReplace.replaceWithNewReference("$contextParameterName.$extensionName.$localizationVariableName")
+        val replacementReference = "$contextParameterName.$extensionName.${refactorArguments.variableWithParameters}"
+        stringElementToReplace.replaceWithNewReference(replacementReference)
     }
 
-    private fun getLocalizationValue(stringElementToReplace: DartStringLiteralExpression) =
-        stringElementToReplace.text.let {
-            "\"${it.substring(1, it.length - 1)}\""
-        }
-
-
-    private fun Project.addToArbFile(jsonObject: JsonValue, resourceName: String, value: String) {
-        if (jsonObject !is JsonObject) return
-
-        writeFile {
-            JsonPsiUtil.addProperty(jsonObject, createJsonProperty(resourceName, value), false)
+    private fun Project.modifyArbFileContent(
+        arbContent: JsonObject,
+        refactorArguments: RefactorArguments
+    ) {
+        addToArbFile(arbContent, refactorArguments.variableName, refactorArguments.arbValue)
+        if (refactorArguments.arbTemplate != null) {
+            addToArbFile(arbContent, refactorArguments.arbTemplateName, refactorArguments.arbTemplate)
         }
     }
 
-    private val Project.arbTopLevelValue: JsonValue?
-        get() {
-            val intlConfig = firstFileByName<YAMLFile>("l10n.yaml") ?: return null
-            val arbFileName = getArbFileNameFromIntlConfig(intlConfig) ?: return null
-            return firstFileByName<JsonFile>(arbFileName)?.topLevelValue
+    private fun getRefactorArguments(
+        stringElementToReplace: DartStringLiteralExpression,
+        arbContent: JsonObject
+    ): RefactorArguments? {
+        val variableName = getNewVariableName(arbContent) ?: return null
+        var parameterCount = 1
+        var arbValue = ""
+        val parameters = mutableListOf<String>()
+        val templates = mutableListOf<String>()
+
+        stringElementToReplace.iterateOverSiblings { element ->
+
+            when (element) {
+                is DartShortTemplateEntry -> {
+                    val parameterName = "p${parameterCount++}"
+
+                    element.expression?.text?.let(parameters::add)
+                    arbValue += "{$parameterName}"
+                    templates += parameterName
+                }
+
+                is DartLongTemplateEntry -> {
+                    val parameterName = "p${parameterCount++}"
+
+                    element.expression?.text?.let(parameters::add)
+                    arbValue += "{$parameterName}"
+                    templates += parameterName
+                }
+
+                else -> arbValue += element.text
+            }
         }
+
+        val methodParameters = if (parameters.isEmpty()) "" else "(${parameters.joinToString()})"
+        val arbTemplateValue = if (templates.isNotEmpty()) {
+            val defineTemplates = templates.joinToString { "\"$it\": {}" }
+            "{ \"placeholders\": { $defineTemplates }}"
+        } else null
+        return RefactorArguments(arbValue, arbTemplateValue, variableName, methodParameters)
+    }
+
+
+    private fun Project.addToArbFile(jsonObject: JsonObject, resourceName: String, value: String) = writeFile {
+        JsonPsiUtil.addProperty(jsonObject, createJsonProperty(resourceName, value), false)
+    }
+
+    private fun Project.getArbObjectOrNull(): JsonObject? {
+        val intlConfig = firstFileByName<YAMLFile>("l10n.yaml") ?: return null
+        val arbFileName = getArbFileNameFromIntlConfig(intlConfig) ?: return null
+        return firstFileByName<JsonFile>(arbFileName)?.topLevelValue?.let { if (it is JsonObject) it else null }
+    }
 
     private fun getArbFileNameFromIntlConfig(intlConfig: YAMLFile): String? {
         val yamlProperties = (intlConfig.documents.firstOrNull()?.topLevelValue as YAMLMapping).keyValues
@@ -89,7 +127,7 @@ class ReplaceStringWithTranslationIntention : PsiElementBaseIntentionAction(), I
     }
 
     private fun Project.readUserDefinedParametersSettings() =
-        getService(ArbPluginSettingsState::class.java).state.run { importPath to extensionName }
+        getService(ArbPluginSettingsState::class.java).state
 
     private fun PsiElement.addImport(import: String): Unit = this.project.writeFile {
         val dartFile = this.parentOfType<DartFile>() ?: return@writeFile
@@ -129,4 +167,12 @@ class ReplaceStringWithTranslationIntention : PsiElementBaseIntentionAction(), I
 
 }
 
-
+data class RefactorArguments(
+    val arbValue: String,
+    val arbTemplate: String?,
+    val variableName: String,
+    val methodParameters: String
+) {
+    val arbTemplateName = "@${variableName}"
+    val variableWithParameters = "${variableName}${methodParameters}"
+}

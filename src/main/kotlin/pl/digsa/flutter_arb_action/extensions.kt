@@ -4,6 +4,7 @@ import com.intellij.json.psi.JsonElementGenerator
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.guessProjectDir
+import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiManager
 import com.jetbrains.lang.dart.psi.DartExpression
@@ -33,4 +34,12 @@ fun DartStringLiteralExpression.replaceWithNewReference(reference: String) = thi
         reference
     ) ?: return@writeFile
     this.replace(replacementVersion)
+}
+
+inline fun PsiElement.iterateOverSiblings(action: (PsiElement) -> Unit) {
+    var element: PsiElement? = firstChild
+    while (element != null) {
+        action(element)
+        element = element.nextSibling
+    }
 }

@@ -9,18 +9,17 @@ import com.intellij.openapi.project.Project
     name = "pl.digsa.flutter_arb_action",
 )
 @Service(Service.Level.PROJECT)
-class ArbPluginSettingsState(private val project: Project) : PersistentStateComponent<ArbPluginSettingsState.State> {
+class ArbPluginSettingsState : PersistentStateComponent<ArbPluginSettingsState.State> {
 
     companion object {
         fun Project.getSettingsInstance(): ArbPluginSettingsState =
             getService(ArbPluginSettingsState::class.java)
     }
 
-    class State {
-        var importPath: String = "import \'package:\';"
-
+    data class State(
+        var importPath: String = "import \'package:\';",
         var extensionName: String = "text"
-    }
+    )
 
     private var state: State = State()
 
