@@ -3,10 +3,9 @@ package pl.digsa.flutter_arb_action
 import com.intellij.json.psi.JsonElementGenerator
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.project.guessProjectDir
 import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiManager
-import com.intellij.psi.search.FilenameIndex
-import com.intellij.psi.search.GlobalSearchScope
 import com.jetbrains.lang.dart.psi.DartExpression
 import com.jetbrains.lang.dart.psi.DartStringLiteralExpression
 import com.jetbrains.lang.dart.util.DartElementGenerator
@@ -17,8 +16,7 @@ inline fun <reified R> Sequence<*>.firstIsInstanceOrNull(): R? {
 }
 
 inline fun <reified T : PsiFile> Project.firstFileByName(name: String): T? {
-    val virtualFile =
-        FilenameIndex.getVirtualFilesByName(name, GlobalSearchScope.projectScope(this)).firstOrNull() ?: return null
+    val virtualFile = guessProjectDir()?.findFileByRelativePath(name) ?: return null
     return PsiManager.getInstance(this).findFile(virtualFile)?.let { if (it is T) it else null }
 }
 

@@ -79,8 +79,12 @@ class ReplaceStringWithTranslationIntention : PsiElementBaseIntentionAction(), I
             return firstFileByName<JsonFile>(arbFileName)?.topLevelValue
         }
 
-    private fun getArbFileNameFromIntlConfig(intlConfig: YAMLFile) =
-        (intlConfig.documents.firstOrNull()?.topLevelValue as YAMLMapping).keyValues.firstOrNull { it.keyText == "template-arb-file" }?.valueText
+    private fun getArbFileNameFromIntlConfig(intlConfig: YAMLFile): String? {
+        val yamlProperties = (intlConfig.documents.firstOrNull()?.topLevelValue as YAMLMapping).keyValues
+        val templateFile = yamlProperties.firstOrNull { it.keyText == "template-arb-file" }?.valueText ?: return null
+        val templateDir = yamlProperties.firstOrNull { it.keyText == "arb-dir" }?.valueText ?: return null
+        return "$templateDir/$templateFile"
+    }
 
     private fun Project.readUserDefinedParametersSettings() =
         getService(ArbPluginSettingsState::class.java).state.run { importPath to extensionName }
