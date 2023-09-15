@@ -48,9 +48,12 @@ class ReplaceStringWithTranslationIntention : PsiElementBaseIntentionAction(), I
         val stringElementToReplace = getStringLiteralExpression(element) ?: return
         val localizationValue = getLocalizationValue(stringElementToReplace)
 
-        val localizationVariableName = getNewVariableName() ?: return
+        val arbContent = project.arbTopLevelValue ?: return
+        if (arbContent !is JsonObject) return
 
-        project.addToArbFile(localizationVariableName, localizationValue)
+        val localizationVariableName = getNewVariableName(arbContent) ?: return
+
+        project.addToArbFile(arbContent, localizationVariableName, localizationValue)
 
         val (import, extensionName) = project.readUserDefinedParametersSettings()
         element.addImport(import)
@@ -63,8 +66,7 @@ class ReplaceStringWithTranslationIntention : PsiElementBaseIntentionAction(), I
         }
 
 
-    private fun Project.addToArbFile(resourceName: String, value: String) {
-        val jsonObject = arbTopLevelValue ?: return
+    private fun Project.addToArbFile(jsonObject: JsonValue, resourceName: String, value: String) {
         if (jsonObject !is JsonObject) return
 
         writeFile {
@@ -102,7 +104,7 @@ class ReplaceStringWithTranslationIntention : PsiElementBaseIntentionAction(), I
         dartFile.addAfter(importStatement, lastImportStatement)
     }
 
-    private fun getNewVariableName(): String? {
+    private fun getNewVariableName(existingProperties: JsonObject): String? {
         lateinit var resourceName: Cell<JBTextField>
         val panel = panel {
             row {
@@ -111,6 +113,7 @@ class ReplaceStringWithTranslationIntention : PsiElementBaseIntentionAction(), I
                     if (it.text.trim()
                             .contains(" ")
                     ) return@validation ValidationInfo("Field cannot contain white spaces")
+                    if (existingProperties.findProperty(it.text.trim()) != null) return@validation ValidationInfo("Key with this name exists")
                     null
                 }
             }
