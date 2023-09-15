@@ -12,15 +12,14 @@ import com.intellij.psi.PsiElement
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.psi.util.childrenOfType
 import com.intellij.psi.util.parentOfType
-import com.intellij.ui.components.JBTextField
-import com.intellij.ui.dsl.builder.Cell
-import com.intellij.ui.dsl.builder.LabelPosition
-import com.intellij.ui.dsl.builder.panel
+import com.intellij.ui.dsl.builder.*
 import com.jetbrains.lang.dart.psi.*
 import com.jetbrains.lang.dart.util.DartElementGenerator
 import org.jetbrains.yaml.psi.YAMLFile
 import org.jetbrains.yaml.psi.YAMLMapping
+import pl.digsa.flutter_arb_action.autohinting.AutohintTextField
 import pl.digsa.flutter_arb_action.settings.ArbPluginSettingsState
+import javax.swing.JTextField
 
 
 @Suppress("IntentionDescriptionNotFoundInspection")
@@ -143,10 +142,14 @@ class ReplaceStringWithTranslationIntention : PsiElementBaseIntentionAction(), I
     }
 
     private fun getNewVariableName(existingProperties: JsonObject): String? {
-        lateinit var resourceName: Cell<JBTextField>
+        lateinit var resourceName: Cell<JTextField>
         val panel = panel {
             row {
-                resourceName = textField().label("Variable name", LabelPosition.TOP).focused().validation {
+                resourceName = cell(AutohintTextField(listOf("Hint 1", "Hint 2", "some", "thing"))).also {
+                    it.columns(
+                        COLUMNS_SHORT
+                    )
+                }.label("Variable name", LabelPosition.TOP).focused().validation {
                     if (it.text.isEmpty()) return@validation ValidationInfo("Field cannot be empty")
                     if (it.text.trim()
                             .contains(" ")
