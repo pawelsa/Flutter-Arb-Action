@@ -6,18 +6,43 @@ import java.awt.Graphics2D
 import java.awt.KeyboardFocusManager
 import java.awt.RenderingHints
 import java.awt.event.KeyEvent
+import java.awt.event.KeyListener
 import java.lang.Integer.min
 import javax.swing.JTextField
 import javax.swing.KeyStroke
 
 
 class AutohintTextField(private val autocompletionTree: AutocompletionTree) : JTextField() {
-    private var hint: String? = null
+    internal var hint: String? = null
+
+    private var isHandlingKeyEvent = false
 
     init {
         val emptySet: Set<KeyStroke> = HashSet()
         setFocusTraversalKeys(KeyboardFocusManager.FORWARD_TRAVERSAL_KEYS, emptySet)
         setFocusTraversalKeys(KeyboardFocusManager.BACKWARD_TRAVERSAL_KEYS, emptySet)
+        addKeyListener(object : KeyListener {
+            override fun keyTyped(e: KeyEvent?) = handlePressedKey(e)
+
+            override fun keyPressed(e: KeyEvent?) = handlePressedKey(e)
+
+            private fun handlePressedKey(e: KeyEvent?) {
+                if (!isHandlingKeyEvent) {
+                    isHandlingKeyEvent = true
+                    processKey(e)
+                }
+            }
+
+            override fun keyReleased(e: KeyEvent?) {
+                isHandlingKeyEvent = false
+            }
+        })
+    }
+
+    fun processKey(event: KeyEvent?) {
+        if (event?.keyCode == KeyEvent.VK_TAB) {
+            triggerAutocompletion()
+        }
     }
 
     override fun paintComponent(g: Graphics) {
@@ -37,15 +62,6 @@ class AutohintTextField(private val autocompletionTree: AutocompletionTree) : JT
                 20
             ) // Adjust position as needed
             g2.dispose()
-        }
-    }
-
-    override fun processKeyEvent(e: KeyEvent?) {
-        if (e?.keyCode == KeyEvent.VK_TAB) {
-            triggerAutocompletion()
-            e.consume()
-        } else {
-            super.processKeyEvent(e)
         }
     }
 

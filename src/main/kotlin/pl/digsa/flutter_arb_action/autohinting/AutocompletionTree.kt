@@ -4,9 +4,13 @@ class AutocompletionTree(keys: List<String>) {
     private val startNodes: MutableSet<AutocompletionNode> = mutableSetOf()
 
     init {
-        keys.forEach {
+        updateTree(keys)
+    }
 
-            val parts = it.cutVariableName().drop(1)
+    fun updateTree(keys: List<String>) {
+        keys.forEach { key ->
+
+            val parts = key.cutVariableName().drop(1)
             val newRoot = startNodes.firstOrNull { it.value == parts.first() } ?: AutocompletionNode(parts.first())
             newRoot.addNodes(parts.drop(1))
             startNodes.add(newRoot)
@@ -41,8 +45,8 @@ data class AutocompletionNode(val value: String) {
     fun findMatching(parts: List<String>): String? {
         if (parts.isEmpty()) return value
         if (value == parts.first()) {
-            return value + (nextNode.map { it.findMatching(parts.drop(1)) }.firstOrNull() ?: "")
-        } else if (value.contains(parts.first())) {
+            return value + (nextNode.firstNotNullOfOrNull { it.findMatching(parts.drop(1)) } ?: "")
+        } else if (value.startsWith(parts.first())) {
             return value
         }
         return null

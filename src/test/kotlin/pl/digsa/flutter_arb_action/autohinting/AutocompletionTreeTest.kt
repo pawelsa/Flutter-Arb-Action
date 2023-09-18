@@ -28,4 +28,21 @@ class AutocompletionTreeTest {
         assert(tree.findMatching("appbar") == "appbarTitle")
     }
 
+    @Test
+    fun `should concat name and build a tree starting with the same word`() {
+        val input = listOf(
+            "searchPersonnelPesel",
+            "searchPersonnelProfessionTitle",
+            "searchMedicalServiceAppbarTitle",
+            "searchMedicalServiceCriteriaTitle",
+            "search"
+        )
+        val tree = AutocompletionTree(input)
+
+        assert(tree.findMatching("sea") == "search")
+        assert(tree.findMatching("search") == "searchPersonnel")
+        assert(tree.findMatching("searchP") == "searchPersonnel")
+        assert(tree.findMatching("searchM") == "searchMedical")
+    }
+
 }
