@@ -1,44 +1,38 @@
 plugins {
     id("java")
-    id("org.jetbrains.kotlin.jvm") version "1.7.20"
-    id("org.jetbrains.intellij") version "1.13.1"
+    id("org.jetbrains.kotlin.jvm") version Versions.kotlin
+    id("org.jetbrains.intellij") version Versions.intellij
 }
-
-group = "pl.digsa"
-version = "1.0.0"
 
 repositories {
     mavenCentral()
 }
 
+group = ModuleConfig.group
+version = ModuleConfig.version
+
 // Configure Gradle IntelliJ Plugin
 // Read more: https://plugins.jetbrains.com/docs/intellij/tools-gradle-intellij-plugin.html
 intellij {
-    version.set("2022.2.4")
-    type.set("IC") // Target IDE Platform
+    version.set(Versions.Intellij.version)
+    type.set(Versions.Intellij.type) // Target IDE Platform
 
-    plugins.set(
-        listOf(
-            "Dart:222.4582",
-            "com.localizely.flutter-intl:1.18.4-2022.2",
-            "org.jetbrains.plugins.yaml:222.3739.67"
-        )
-    )
+    plugins.set(ModuleConfig.IntellijPlugins.plugins)
 }
 
 tasks {
     // Set the JVM compatibility versions
     withType<JavaCompile> {
-        sourceCompatibility = "11"
-        targetCompatibility = "11"
+        sourceCompatibility = Versions.java
+        targetCompatibility = Versions.java
     }
     withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-        kotlinOptions.jvmTarget = "11"
+        kotlinOptions.jvmTarget = Versions.java
     }
 
     patchPluginXml {
-        sinceBuild.set("222")
-        untilBuild.set("232.*")
+        sinceBuild.set(Versions.Intellij.sinceBuild)
+        untilBuild.set(Versions.Intellij.untilBuild)
     }
 
     signPlugin {
