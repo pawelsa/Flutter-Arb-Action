@@ -5,6 +5,7 @@ import com.intellij.codeInsight.intention.PsiElementBaseIntentionAction
 import com.intellij.json.psi.JsonFile
 import com.intellij.json.psi.JsonObject
 import com.intellij.json.psi.JsonPsiUtil
+import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ValidationInfo
@@ -12,15 +13,15 @@ import com.intellij.psi.PsiElement
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.psi.util.childrenOfType
 import com.intellij.psi.util.parentOfType
-import com.intellij.ui.components.JBTextField
-import com.intellij.ui.dsl.builder.Cell
-import com.intellij.ui.dsl.builder.LabelPosition
-import com.intellij.ui.dsl.builder.panel
+import com.intellij.ui.dsl.builder.*
 import com.jetbrains.lang.dart.psi.*
 import com.jetbrains.lang.dart.util.DartElementGenerator
 import org.jetbrains.yaml.psi.YAMLFile
 import org.jetbrains.yaml.psi.YAMLMapping
+import pl.digsa.flutter_arb_action.autohinting.ArbService
+import pl.digsa.flutter_arb_action.autohinting.AutohintTextField
 import pl.digsa.flutter_arb_action.settings.ArbPluginSettingsState
+import javax.swing.JTextField
 
 
 @Suppress("IntentionDescriptionNotFoundInspection")
@@ -47,7 +48,7 @@ class ReplaceStringWithTranslationIntention : PsiElementBaseIntentionAction(), I
         val stringElementToReplace = element.findStringLiteralExpressionInParentOrNull() ?: return
         val arbContent = project.getArbObjectOrNull() ?: return
 
-        val refactorArguments = getRefactorArguments(stringElementToReplace, arbContent) ?: return
+        val refactorArguments = getRefactorArguments(stringElementToReplace) ?: return
 
         project.modifyArbFileContent(arbContent, refactorArguments)
 
@@ -69,9 +70,9 @@ class ReplaceStringWithTranslationIntention : PsiElementBaseIntentionAction(), I
 
     private fun getRefactorArguments(
         stringElementToReplace: DartStringLiteralExpression,
-        arbContent: JsonObject
     ): RefactorArguments? {
-        val variableName = getNewVariableName(arbContent) ?: return null
+        val project = stringElementToReplace.project
+        val variableName = project.getNewVariableName() ?: return null
         var parameterCount = 1
         var arbValue = ""
         val parameters = mutableListOf<String>()
@@ -142,18 +143,25 @@ class ReplaceStringWithTranslationIntention : PsiElementBaseIntentionAction(), I
         dartFile.addAfter(importStatement, lastImportStatement)
     }
 
-    private fun getNewVariableName(existingProperties: JsonObject): String? {
-        lateinit var resourceName: Cell<JBTextField>
+    private fun Project.getNewVariableName(): String? {
+        lateinit var resourceName: Cell<JTextField>
+        val autocompletionTree = service<ArbService>().autocompletionTree
         val panel = panel {
             row {
-                resourceName = textField().label("Variable name", LabelPosition.TOP).focused().validation {
-                    if (it.text.isEmpty()) return@validation ValidationInfo("Field cannot be empty")
-                    if (it.text.trim()
-                            .contains(" ")
-                    ) return@validation ValidationInfo("Field cannot contain white spaces")
-                    if (existingProperties.findProperty(it.text.trim()) != null) return@validation ValidationInfo("Key with this name exists")
-                    null
-                }
+                val autohintTextField = AutohintTextField(autocompletionTree)
+                resourceName =
+                    cell(autohintTextField).also {
+                        it.columns(
+                            COLUMNS_SHORT
+                        )
+                    }.label("Variable name", LabelPosition.TOP).focused().validation {
+                        if (it.text.isEmpty()) return@validation ValidationInfo("Field cannot be empty")
+                        if (it.text.trim()
+                                .contains(" ")
+                        ) return@validation ValidationInfo("Field cannot contain white spaces")
+                        if (autohintTextField.hint == it.text.trim()) return@validation ValidationInfo("Key with this name exists")
+                        null
+                    }
             }
         }
 
