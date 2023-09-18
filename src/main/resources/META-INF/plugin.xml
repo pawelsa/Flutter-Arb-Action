@@ -8,12 +8,19 @@
     <name>Flutter_arb_action</name>
 
     <!-- A displayed Vendor name or Organization ID displayed on the Plugins Page. -->
-    <vendor email="support@yourcompany.com" url="https://www.yourcompany.com">YourCompany</vendor>
+    <vendor email="digsa.dev@gmail.com" url="https://github.com/pawelsa/flutter_arb_action">digsa</vendor>
 
     <!-- Description of the plugin displayed on the Plugin Page and IDE Plugin Manager.
          Simple HTML elements (text formatting, paragraphs, and lists) can be added inside of <![CDATA[ ]]> tag.
          Guidelines: https://plugins.jetbrains.com/docs/marketplace/plugin-overview-page.html#plugin-description -->
-    <description>Intention to move string text to arb files</description>
+    <description>
+        <![CDATA[
+            <p><span style="font-size:16px"><strong>Intention to move string text to arb files</strong></span><br />
+        <br />
+        On the first run, we should configure the plugin in <strong>Settings|Tools|Flutter Arb Action</strong>, where we need to provide<br />
+        a path to the import of the extension method, and the name of that method.</p>
+        ]]>
+    </description>
 
     <!-- Product and plugin compatibility requirements.
          Read more: https://plugins.jetbrains.com/docs/intellij/plugin-compatibility.html -->
@@ -21,6 +28,8 @@
     <depends>Dart</depends>
     <depends>com.localizely.flutter-intl</depends>
     <depends>org.jetbrains.plugins.yaml</depends>
+
+    <idea-version since-build="222"/>
     <!-- Extension points defined by the plugin.
          Read more: https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
     <extensions defaultExtensionNs="com.intellij">
@@ -31,6 +40,7 @@
         </intentionAction>
 
         <projectService serviceImplementation="pl.digsa.flutter_arb_action.settings.ArbPluginSettingsState"/>
+        <projectService serviceImplementation="pl.digsa.flutter_arb_action.autohinting.ArbService"/>
 
         <projectConfigurable
                 parentId="tools"
