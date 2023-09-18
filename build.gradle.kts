@@ -1,6 +1,3 @@
-import java.io.FileInputStream
-import java.util.*
-
 plugins {
     id("java")
     id("org.jetbrains.kotlin.jvm") version "1.7.20"
@@ -9,12 +6,6 @@ plugins {
 
 group = "pl.digsa"
 version = "1.0-SNAPSHOT"
-
-val keystoreProperties = Properties()
-val keystorePropertiesFile = rootProject.file("key.properties")
-if (keystorePropertiesFile.exists()) {
-    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
-}
 
 repositories {
     mavenCentral()
@@ -51,12 +42,12 @@ tasks {
     }
 
     signPlugin {
-        certificateChain.set(keystoreProperties["certificateChain"] as String)
-        privateKey.set(keystoreProperties["privateKey"] as String)
-        password.set(keystoreProperties["privateKeyPassword"] as String)
+        certificateChain.set(System.getenv("CERTIFICATE_CHAIN"))
+        privateKey.set(System.getenv("PRIVATE_KEY"))
+        password.set(System.getenv("PRIVATE_KEY_PASSWORD"))
     }
 
     publishPlugin {
-        token.set(keystoreProperties["publishToken"] as String)
+        token.set(System.getenv("PUBLISH_TOKEN"))
     }
 }
