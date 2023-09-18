@@ -6,18 +6,17 @@ class AutocompletionTree(keys: List<String>) {
     init {
         keys.forEach {
 
-            val parts = it.cutVariableName()
+            val parts = it.cutVariableName().drop(1)
             val newRoot = startNodes.firstOrNull { it.value == parts.first() } ?: AutocompletionNode(parts.first())
             newRoot.addNodes(parts.drop(1))
             startNodes.add(newRoot)
-
         }
     }
 
     fun findMatching(text: String?): String? {
         if (text == null) return null
 
-        val parts = text.cutVariableName()
+        val parts = text.cutVariableName().drop(1)
 
         for (node in startNodes) {
             val matching = node.findMatching(parts)
@@ -29,7 +28,8 @@ class AutocompletionTree(keys: List<String>) {
     }
 }
 
-data class AutocompletionNode(val value: String, val nextNode: MutableSet<AutocompletionNode> = mutableSetOf()) {
+data class AutocompletionNode(val value: String) {
+    private val nextNode: MutableSet<AutocompletionNode> = mutableSetOf()
 
     fun addNodes(parts: List<String>) {
         if (parts.isEmpty()) return
@@ -39,26 +39,13 @@ data class AutocompletionNode(val value: String, val nextNode: MutableSet<Autoco
     }
 
     fun findMatching(parts: List<String>): String? {
-        if (parts.isEmpty()) return null
+        if (parts.isEmpty()) return value
         if (value == parts.first()) {
-            return value + (nextNode.firstOrNull { it.findMatching(parts.drop(1)) != null }?.value ?: "")
+            return value + (nextNode.map { it.findMatching(parts.drop(1)) }.firstOrNull() ?: "")
         } else if (value.contains(parts.first())) {
             return value
         }
         return null
-    }
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-
-        other as AutocompletionNode
-
-        return value == other.value
-    }
-
-    override fun hashCode(): Int {
-        return value.hashCode()
     }
 
 }
