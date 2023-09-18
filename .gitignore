@@ -41,6 +41,3 @@ bin/
 ### Mac OS ###
 .DS_Store
 /.idea/
-
-### Key Properties ###
-key.properties
