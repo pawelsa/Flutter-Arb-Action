@@ -26,15 +26,11 @@ jobs:
           distribution: 'oracle'
           cache: 'gradle'
 
-      - name: Create key.properties file
-        run: |
-          echo ${{ secrets.KEY_PROPERTIES }} | base64 -d > key.properties
-
       - name: Publish plugin
+        env:
+          PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+          PRIVATE_KEY_PASSWORD: ${{ secrets.PRIVATE_KEY_PASSWORD }}
+          PUBLISH_TOKEN: ${{ secrets.PUBLISH_TOKEN }}
+          CERTIFICATE_CHAIN: ${{ secrets.CERTIFICATE_CHAIN }}
         run: |
           ./gradlew publishPlugin
-          
-      - name: Delete key.properties file
-        if: always()
-        run: |
-          rm -f key.properties

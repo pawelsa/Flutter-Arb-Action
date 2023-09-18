@@ -1,6 +1,3 @@
-import java.io.FileInputStream
-import java.util.*
-
 plugins {
     id("java")
     id("org.jetbrains.kotlin.jvm") version Versions.kotlin
@@ -13,12 +10,6 @@ repositories {
 
 group = ModuleConfig.group
 version = ModuleConfig.version
-
-val keystoreProperties = Properties()
-val keystorePropertiesFile = rootProject.file("key.properties")
-if (keystorePropertiesFile.exists()) {
-    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
-}
 
 // Configure Gradle IntelliJ Plugin
 // Read more: https://plugins.jetbrains.com/docs/intellij/tools-gradle-intellij-plugin.html
@@ -45,12 +36,12 @@ tasks {
     }
 
     signPlugin {
-        certificateChain.set(keystoreProperties["certificateChain"] as String)
-        privateKey.set(keystoreProperties["privateKey"] as String)
-        password.set(keystoreProperties["privateKeyPassword"] as String)
+        certificateChain.set(System.getenv("CERTIFICATE_CHAIN"))
+        privateKey.set(System.getenv("PRIVATE_KEY"))
+        password.set(System.getenv("PRIVATE_KEY_PASSWORD"))
     }
 
     publishPlugin {
-        token.set(keystoreProperties["publishToken"] as String)
+        token.set(System.getenv("PUBLISH_TOKEN"))
     }
 }
