@@ -17,6 +17,7 @@ import com.jetbrains.lang.dart.psi.*
 import com.jetbrains.lang.dart.util.DartElementGenerator
 import org.jetbrains.yaml.psi.YAMLFile
 import org.jetbrains.yaml.psi.YAMLMapping
+import pl.digsa.flutter_arb_action.autohinting.AutocompletionTree
 import pl.digsa.flutter_arb_action.autohinting.AutohintTextField
 import pl.digsa.flutter_arb_action.settings.ArbPluginSettingsState
 import javax.swing.JTextField
@@ -145,17 +146,18 @@ class ReplaceStringWithTranslationIntention : PsiElementBaseIntentionAction(), I
         lateinit var resourceName: Cell<JTextField>
         val panel = panel {
             row {
-                resourceName = cell(AutohintTextField(listOf("Hint 1", "Hint 2", "some", "thing"))).also {
-                    it.columns(
-                        COLUMNS_SHORT
-                    )
-                }.label("Variable name", LabelPosition.TOP).focused().validation {
-                    if (it.text.isEmpty()) return@validation ValidationInfo("Field cannot be empty")
-                    if (it.text.trim()
-                            .contains(" ")
-                    ) return@validation ValidationInfo("Field cannot contain white spaces")
-                    if (existingProperties.findProperty(it.text.trim()) != null) return@validation ValidationInfo("Key with this name exists")
-                    null
+                resourceName =
+                    cell(AutohintTextField(AutocompletionTree(existingProperties.propertyList.map { it.name }))).also {
+                        it.columns(
+                            COLUMNS_SHORT
+                        )
+                    }.label("Variable name", LabelPosition.TOP).focused().validation {
+                        if (it.text.isEmpty()) return@validation ValidationInfo("Field cannot be empty")
+                        if (it.text.trim()
+                                .contains(" ")
+                        ) return@validation ValidationInfo("Field cannot contain white spaces")
+                        if (existingProperties.findProperty(it.text.trim()) != null) return@validation ValidationInfo("Key with this name exists")
+                        null
                 }
             }
         }
