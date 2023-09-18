@@ -22,13 +22,7 @@ class AutocompletionTree(keys: List<String>) {
 
         val parts = text.cutVariableName().drop(1)
 
-        for (node in startNodes) {
-            val matching = node.findMatching(parts)
-            if (matching != null) {
-                return matching
-            }
-        }
-        return null
+        return startNodes.firstNotNullOfOrNull { it.findMatching(parts) }
     }
 }
 
