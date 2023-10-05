@@ -1,4 +1,4 @@
-package pl.digsa.flutter_arb_action
+package pl.digsa.flutter_arb_action.replace_intention
 
 import com.intellij.openapi.ui.DialogWrapper
 import javax.swing.JComponent
