@@ -35,7 +35,7 @@
     <extensions defaultExtensionNs="com.intellij">
 
         <intentionAction>
-            <className>pl.digsa.flutter_arb_action.ReplaceStringWithTranslationIntention</className>
+            <className>pl.digsa.flutter_arb_action.replace_intention.ReplaceStringWithTranslationIntention</className>
             <category>Flutter resources</category>
         </intentionAction>
 
