@@ -1,4 +1,4 @@
-package pl.digsa.flutter_arb_action
+package pl.digsa.flutter_arb_action.replace_intention
 
 import com.intellij.codeInsight.intention.IntentionAction
 import com.intellij.codeInsight.intention.PsiElementBaseIntentionAction
@@ -18,6 +18,7 @@ import com.jetbrains.lang.dart.psi.*
 import com.jetbrains.lang.dart.util.DartElementGenerator
 import org.jetbrains.yaml.psi.YAMLFile
 import org.jetbrains.yaml.psi.YAMLMapping
+import pl.digsa.flutter_arb_action.*
 import pl.digsa.flutter_arb_action.autohinting.ArbService
 import pl.digsa.flutter_arb_action.autohinting.AutohintTextField
 import pl.digsa.flutter_arb_action.settings.ArbPluginSettingsState
@@ -106,6 +107,7 @@ class ReplaceStringWithTranslationIntention : PsiElementBaseIntentionAction(), I
             val defineTemplates = templates.joinToString { "\"$it\": {}" }
             "{ \"placeholders\": { $defineTemplates }}"
         } else null
+        arbValue = "\"${arbValue.substring(1, arbValue.length - 1)}\""
         return RefactorArguments(arbValue, arbTemplateValue, variableName, methodParameters)
     }
 
