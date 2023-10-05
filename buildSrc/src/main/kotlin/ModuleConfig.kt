@@ -2,7 +2,7 @@
 
 object ModuleConfig {
     const val group = "pl.digsa"
-    const val version = "1.0.0"
+    const val version = "1.0.1"
 
     object IntellijPlugins {
         private object Versions {
