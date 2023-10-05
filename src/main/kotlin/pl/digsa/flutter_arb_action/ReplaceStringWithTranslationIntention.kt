@@ -135,12 +135,16 @@ class ReplaceStringWithTranslationIntention : PsiElementBaseIntentionAction(), I
         val importStatements = dartFile.childrenOfType<DartImportStatement>()
         if (importStatements.any { it.text == import }) return@writeFile
 
-        val lastImportStatement = importStatements.last()
         val importStatement = DartElementGenerator.createDummyFile(
             this.project,
             import
         ).firstChild
-        dartFile.addAfter(importStatement, lastImportStatement)
+        if (importStatements.isEmpty()) {
+            dartFile.addBefore(importStatement, dartFile.firstChild)
+        } else {
+            val lastImportStatement = importStatements.last()
+            dartFile.addAfter(importStatement, lastImportStatement)
+        }
     }
 
     private fun Project.getNewVariableName(): String? {
