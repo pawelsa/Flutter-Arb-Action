@@ -140,10 +140,34 @@ class ReplaceStringWithTranslationIntention : PsiElementBaseIntentionAction(), I
             import
         ).firstChild
         if (importStatements.isEmpty()) {
-            dartFile.addBefore(importStatement, dartFile.firstChild)
+
+            val partOfStatement = dartFile.childrenOfType<DartPartOfStatement>().firstOrNull()
+            if (partOfStatement == null) {
+                dartFile.addBefore(importStatement, dartFile.firstChild)
+            } else {
+                findLibraryFileAndAddThereAnImportStatement(partOfStatement, import, importStatement)
+            }
         } else {
             val lastImportStatement = importStatements.last()
             dartFile.addAfter(importStatement, lastImportStatement)
+        }
+    }
+
+    private fun findLibraryFileAndAddThereAnImportStatement(
+        partOfStatement: DartPartOfStatement,
+        import: String,
+        importStatement: PsiElement
+    ) {
+        val libraryStatement = partOfStatement.childrenOfType<DartLibraryId>().firstOrNull()?.reference?.resolve()
+            ?.parentOfType<DartLibraryStatement>() ?: return
+
+        val importStatements = libraryStatement.containingFile.childrenOfType<DartImportStatement>()
+        if (importStatements.any { it.text == import }) return
+
+        if (importStatements.isEmpty()) {
+            libraryStatement.parent.addAfter(importStatement, libraryStatement)
+        } else {
+            libraryStatement.addAfter(importStatement, importStatements.last())
         }
     }
 
