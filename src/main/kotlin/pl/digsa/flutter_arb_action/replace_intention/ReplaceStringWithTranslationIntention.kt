@@ -66,9 +66,9 @@ class ReplaceStringWithTranslationIntention : PsiElementBaseIntentionAction(), I
         arbContent: JsonObject,
         refactorArguments: RefactorArguments
     ) = writeFile {
-        addToArbFile(arbContent, refactorArguments.variableName, refactorArguments.arbValue)
+        addPropertyToArbFile(arbContent, refactorArguments.variableName, refactorArguments.arbValue)
         if (refactorArguments.arbTemplate != null) {
-            addToArbFile(arbContent, refactorArguments.arbTemplateName, refactorArguments.arbTemplate)
+            addPropertyToArbFile(arbContent, refactorArguments.arbTemplateName, refactorArguments.arbTemplate)
         }
         editor?.let {
             reformat(this, it, arbContent)
@@ -118,12 +118,12 @@ class ReplaceStringWithTranslationIntention : PsiElementBaseIntentionAction(), I
     }
 
 
-    private fun Project.addToArbFile(
+    private fun Project.addPropertyToArbFile(
         jsonObject: JsonObject,
         resourceName: String,
         value: String,
     ) {
-        val jsonProperty = jsonProperty(resourceName, value)
+        val jsonProperty = createJsonProperty(resourceName, value)
         val addedProperty = addJsonProperty(jsonObject, jsonProperty)
         addCommaIfNecessary(jsonObject, addedProperty)
     }
@@ -145,19 +145,15 @@ class ReplaceStringWithTranslationIntention : PsiElementBaseIntentionAction(), I
         jsonObject: JsonObject,
         jsonProperty: JsonProperty,
     ): PsiElement {
+        val propertyName = jsonProperty.name.ignoreToolsSymbol()
         val elementToPlaceBefore =
-            jsonObject.propertyList.firstOrNull { it.name > jsonProperty.name.ignoreToolsSymbol() }
+            jsonObject.propertyList.firstOrNull { it.name > propertyName }
         return if (elementToPlaceBefore != null) {
             jsonObject.addBefore(jsonProperty, elementToPlaceBefore)
         } else {
             JsonPsiUtil.addProperty(jsonObject, jsonProperty, false)
         }
     }
-
-    private fun Project.jsonProperty(
-        resourceName: String,
-        value: String
-    ) = createJsonProperty(resourceName, value)
 
     private fun Project.getArbObjectOrNull(): JsonObject? {
         val intlConfig = firstFileByName<YAMLFile>("l10n.yaml") ?: return null
