@@ -26,6 +26,8 @@ fun Project.createJsonProperty(
     value: String
 ) = JsonElementGenerator(this).createProperty(resourceName, value)
 
+fun Project.createJsonComma() = JsonElementGenerator(this).createComma()
+
 fun Project.writeFile(action: () -> Unit) = WriteCommandAction.runWriteCommandAction(this, action)
 
 fun DartStringLiteralExpression.replaceWithNewReference(reference: String) = this.project.writeFile {
@@ -43,3 +45,5 @@ inline fun PsiElement.iterateOverSiblings(action: (PsiElement) -> Unit) {
         element = element.nextSibling
     }
 }
+
+internal fun String.ignoreToolsSymbol() = if (startsWith("@")) drop(1) else this

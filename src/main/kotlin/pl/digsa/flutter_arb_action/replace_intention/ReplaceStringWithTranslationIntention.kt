@@ -4,6 +4,7 @@ import com.intellij.codeInsight.intention.IntentionAction
 import com.intellij.codeInsight.intention.PsiElementBaseIntentionAction
 import com.intellij.json.psi.JsonFile
 import com.intellij.json.psi.JsonObject
+import com.intellij.json.psi.JsonProperty
 import com.intellij.json.psi.JsonPsiUtil
 import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.Editor
@@ -22,6 +23,7 @@ import pl.digsa.flutter_arb_action.*
 import pl.digsa.flutter_arb_action.autohinting.ArbService
 import pl.digsa.flutter_arb_action.autohinting.AutohintTextField
 import pl.digsa.flutter_arb_action.settings.ArbPluginSettingsState
+import pl.digsa.flutter_arb_action.utils.reformat
 import javax.swing.JTextField
 
 
@@ -51,7 +53,7 @@ class ReplaceStringWithTranslationIntention : PsiElementBaseIntentionAction(), I
 
         val refactorArguments = getRefactorArguments(stringElementToReplace) ?: return
 
-        project.modifyArbFileContent(arbContent, refactorArguments)
+        project.modifyArbFileContent(editor, arbContent, refactorArguments)
 
         val (import, extensionName) = project.readUserDefinedParametersSettings()
         element.addImport(import)
@@ -60,12 +62,16 @@ class ReplaceStringWithTranslationIntention : PsiElementBaseIntentionAction(), I
     }
 
     private fun Project.modifyArbFileContent(
+        editor: Editor?,
         arbContent: JsonObject,
         refactorArguments: RefactorArguments
-    ) {
+    ) = writeFile {
         addToArbFile(arbContent, refactorArguments.variableName, refactorArguments.arbValue)
         if (refactorArguments.arbTemplate != null) {
             addToArbFile(arbContent, refactorArguments.arbTemplateName, refactorArguments.arbTemplate)
+        }
+        editor?.let {
+            reformat(this, it, arbContent)
         }
     }
 
@@ -112,9 +118,46 @@ class ReplaceStringWithTranslationIntention : PsiElementBaseIntentionAction(), I
     }
 
 
-    private fun Project.addToArbFile(jsonObject: JsonObject, resourceName: String, value: String) = writeFile {
-        JsonPsiUtil.addProperty(jsonObject, createJsonProperty(resourceName, value), false)
+    private fun Project.addToArbFile(
+        jsonObject: JsonObject,
+        resourceName: String,
+        value: String,
+    ) {
+        val jsonProperty = jsonProperty(resourceName, value)
+        val addedProperty = addJsonProperty(jsonObject, jsonProperty)
+        addCommaIfNecessary(jsonObject, addedProperty)
     }
+
+    private fun Project.addCommaIfNecessary(
+        jsonObject: JsonObject,
+        addedProperty: PsiElement
+    ): PsiElement? {
+        val lastProperty = jsonObject.lastChild
+        if (lastProperty != addedProperty) {
+            val jsonComma = createJsonComma()
+            jsonObject.addAfter(jsonComma, addedProperty)
+            return jsonComma
+        }
+        return null
+    }
+
+    private fun addJsonProperty(
+        jsonObject: JsonObject,
+        jsonProperty: JsonProperty,
+    ): PsiElement {
+        val elementToPlaceBefore =
+            jsonObject.propertyList.firstOrNull { it.name > jsonProperty.name.ignoreToolsSymbol() }
+        return if (elementToPlaceBefore != null) {
+            jsonObject.addBefore(jsonProperty, elementToPlaceBefore)
+        } else {
+            JsonPsiUtil.addProperty(jsonObject, jsonProperty, false)
+        }
+    }
+
+    private fun Project.jsonProperty(
+        resourceName: String,
+        value: String
+    ) = createJsonProperty(resourceName, value)
 
     private fun Project.getArbObjectOrNull(): JsonObject? {
         val intlConfig = firstFileByName<YAMLFile>("l10n.yaml") ?: return null

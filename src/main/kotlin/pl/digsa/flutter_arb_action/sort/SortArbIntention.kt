@@ -12,11 +12,12 @@ import com.intellij.openapi.editor.SelectionModel
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
 import com.intellij.psi.*
-import com.intellij.psi.codeStyle.CodeStyleManager
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.refactoring.util.CommonRefactoringUtil
 import com.intellij.util.IncorrectOperationException
 import org.jetbrains.annotations.Nls
+import pl.digsa.flutter_arb_action.ignoreToolsSymbol
+import pl.digsa.flutter_arb_action.utils.reformat
 
 /** Slightly modified JsonSortPropertiesIntention [https://github.com/JetBrains/intellij-community/blob/master/json/src/com/intellij/json/intentions/JsonSortPropertiesIntention.kt]
  * Sorts correctly positions with @ at the beginning, so they are always after the main property
@@ -76,21 +77,6 @@ open class SortArbIntention : BaseElementAtCaretIntentionAction(), LightEditComp
                 session.rootObj
             )
         }
-    }
-
-    private fun reformat(
-        project: Project,
-        editor: Editor,
-        obj: JsonObject
-    ) {
-        val pointer = SmartPointerManager.createPointer<JsonObject>(obj)
-        PsiDocumentManager.getInstance(project).doPostponedOperationsAndUnblockDocument(editor.document)
-        val element = pointer.element ?: return
-        val codeStyleManager = CodeStyleManager.getInstance(project)
-        codeStyleManager.reformatText(
-            element.containingFile,
-            setOf(element.textRange)
-        )
     }
 
     override fun startInWriteAction(): Boolean = true
@@ -268,7 +254,6 @@ open class SortArbIntention : BaseElementAtCaretIntentionAction(), LightEditComp
             itemProperty.delete()
         }
 
-        private fun String.ignoreToolsSymbol() = if (startsWith("@")) drop(1) else this
     }
 
 }
