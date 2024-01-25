@@ -39,6 +39,11 @@
             <category>Flutter resources</category>
         </intentionAction>
 
+        <intentionAction>
+            <className>pl.digsa.flutter_arb_action.sort.SortArbIntention</className>
+            <category>Flutter resources</category>
+        </intentionAction>
+
         <projectService serviceImplementation="pl.digsa.flutter_arb_action.settings.ArbPluginSettingsState"/>
         <projectService serviceImplementation="pl.digsa.flutter_arb_action.autohinting.ArbService"/>
 
