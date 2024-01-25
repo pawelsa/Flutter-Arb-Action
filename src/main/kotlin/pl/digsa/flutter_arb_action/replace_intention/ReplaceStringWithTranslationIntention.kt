@@ -23,7 +23,7 @@ import pl.digsa.flutter_arb_action.*
 import pl.digsa.flutter_arb_action.autohinting.ArbService
 import pl.digsa.flutter_arb_action.autohinting.AutohintTextField
 import pl.digsa.flutter_arb_action.settings.ArbPluginSettingsState
-import pl.digsa.flutter_arb_action.utils.reformat
+import pl.digsa.flutter_arb_action.utils.reformatJsonFile
 import javax.swing.JTextField
 
 
@@ -71,7 +71,7 @@ class ReplaceStringWithTranslationIntention : PsiElementBaseIntentionAction(), I
             addPropertyToArbFile(arbContent, refactorArguments.arbTemplateName, refactorArguments.arbTemplate)
         }
         editor?.let {
-            reformat(this, it, arbContent)
+            reformatJsonFile(this, it, arbContent)
         }
     }
 

@@ -17,7 +17,7 @@ import com.intellij.refactoring.util.CommonRefactoringUtil
 import com.intellij.util.IncorrectOperationException
 import org.jetbrains.annotations.Nls
 import pl.digsa.flutter_arb_action.ignoreToolsSymbol
-import pl.digsa.flutter_arb_action.utils.reformat
+import pl.digsa.flutter_arb_action.utils.reformatJsonFile
 
 /** Slightly modified JsonSortPropertiesIntention [https://github.com/JetBrains/intellij-community/blob/master/json/src/com/intellij/json/intentions/JsonSortPropertiesIntention.kt]
  * Sorts correctly positions with @ at the beginning, so they are always after the main property
@@ -71,7 +71,7 @@ open class SortArbIntention : BaseElementAtCaretIntentionAction(), LightEditComp
         )
         if (session.rootObj != null) {
             session.sort()
-            reformat(
+            reformatJsonFile(
                 project,
                 editor,
                 session.rootObj

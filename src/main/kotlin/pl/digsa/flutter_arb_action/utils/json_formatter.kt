@@ -7,7 +7,7 @@ import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.SmartPointerManager
 import com.intellij.psi.codeStyle.CodeStyleManager
 
-internal fun reformat(
+internal fun reformatJsonFile(
     project: Project,
     editor: Editor,
     obj: JsonObject
