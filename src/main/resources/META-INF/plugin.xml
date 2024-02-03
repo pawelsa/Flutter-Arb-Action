@@ -22,11 +22,20 @@
         ]]>
     </description>
 
+    <change-notes><![CDATA[<h2>1.0.2</h2>
+        <ul>
+          <li>Added support for sorting .arb files and moved entries are already sorted</li>
+        </ul>
+
+        <h2>1.18.3</h2>
+        <ul>
+          <li>Fix extract to ARB error for 2022.3 and later versions</li>
+        </ul>]]></change-notes>
+
     <!-- Product and plugin compatibility requirements.
          Read more: https://plugins.jetbrains.com/docs/intellij/plugin-compatibility.html -->
     <depends>com.intellij.modules.platform</depends>
     <depends>Dart</depends>
-    <depends>com.localizely.flutter-intl</depends>
     <depends>org.jetbrains.plugins.yaml</depends>
 
     <idea-version since-build="222"/>
