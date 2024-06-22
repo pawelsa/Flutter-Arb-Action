@@ -2,13 +2,13 @@
 
 object ModuleConfig {
     const val group = "pl.digsa"
-    const val version = "1.0.2"
+    const val version = "1.0.3"
 
     object IntellijPlugins {
         private object Versions {
-            const val dart = "222.4582"
-            const val yaml = "222.3739.67"
-            const val flutterIntl = "1.18.4-2022.2"
+            const val dart = "241.17502"
+            const val yaml = "241.14494.150"
+            const val flutterIntl = "1.18.5-2023.2"
         }
 
         private const val _dart = "Dart:${Versions.dart}"

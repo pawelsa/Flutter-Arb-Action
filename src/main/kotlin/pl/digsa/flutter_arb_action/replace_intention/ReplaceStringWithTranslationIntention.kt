@@ -10,6 +10,7 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ValidationInfo
+import com.intellij.openapi.ui.validation.DialogValidation
 import com.intellij.psi.PsiElement
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.psi.util.childrenOfType
@@ -223,14 +224,17 @@ class ReplaceStringWithTranslationIntention : PsiElementBaseIntentionAction(), I
                         it.columns(
                             COLUMNS_SHORT
                         )
-                    }.label("Variable name", LabelPosition.TOP).focused().validation {
-                        if (it.text.isEmpty()) return@validation ValidationInfo("Field cannot be empty")
-                        if (it.text.trim()
-                                .contains(" ")
-                        ) return@validation ValidationInfo("Field cannot contain white spaces")
-                        if (autohintTextField.hint == it.text.trim()) return@validation ValidationInfo("Key with this name exists")
-                        null
-                    }
+                    }.label("Variable name", LabelPosition.TOP).focused().validation(object : DialogValidation {
+                        override fun validate(): ValidationInfo? {
+                            if (autohintTextField.text.isEmpty()) return ValidationInfo("Field cannot be empty")
+                            if (autohintTextField.text.trim()
+                                    .contains(" ")
+                            ) return ValidationInfo("Field cannot contain white spaces")
+                            if (autohintTextField.hint == autohintTextField.text.trim()) return ValidationInfo("Key with this name exists")
+                            return null
+                        }
+
+                    })
             }
         }
 
