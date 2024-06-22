@@ -1,65 +1,58 @@
 package pl.digsa.flutter_arb_action.settings
 
-import com.intellij.openapi.ui.ValidationInfo
-import com.intellij.ui.dsl.builder.Cell
+import com.intellij.openapi.options.ConfigurationException
+import com.intellij.openapi.ui.DialogPanel
+import com.intellij.ui.dsl.builder.AlignX
 import com.intellij.ui.dsl.builder.LabelPosition
 import com.intellij.ui.dsl.builder.panel
-import com.intellij.ui.dsl.gridLayout.HorizontalAlign
-import javax.swing.JPanel
 import javax.swing.JTextField
 
 class ArbPluginSettingsPanel {
 
-    private lateinit var importStatement: Cell<JTextField>
-    private lateinit var extensionName: Cell<JTextField>
+    private lateinit var importStatement: JTextField
+    private lateinit var extensionName: JTextField
 
-    val panel: JPanel by lazy {
+    val panel: DialogPanel by lazy {
         panel {
             row {
-                importStatement = textField()
-                    .horizontalAlign(HorizontalAlign.FILL)
+                importStatement = JTextField()
+                cell(importStatement).align(AlignX.FILL)
                     .label("Path to the extension function", LabelPosition.TOP)
                     .focused()
-                    .validation {
-                        if (it.text.isEmpty()) {
-                            return@validation ValidationInfo("Field cannot be empty")
-                        }
-                        if (it.text.trim().contains(" ")) {
-                            return@validation ValidationInfo("Field cannot contain white spaces")
-                        }
-                        if (!it.text.matches(Regex("^package:[^/]+(/[^/]+)+.dart$"))) {
-                            return@validation ValidationInfo("Incorrect pattern. Should be \"package:path/to/extension.dart\"")
-                        }
-                        null
-                    }
             }
             row {
-                extensionName = textField()
-                    .label("Name of the extension parameter", LabelPosition.TOP)
-                    .focused()
-                    .validation {
-                        if (it.text.isEmpty()) {
-                            return@validation ValidationInfo("Field cannot be empty")
-                        }
-                        if (it.text.trim().contains(" ")) {
-                            return@validation ValidationInfo("Field cannot contain white spaces")
-                        }
-                        null
-                    }
+                extensionName = JTextField()
+                cell(extensionName).label("Name of the extension parameter", LabelPosition.TOP)
+
             }
         }
     }
 
+    fun apply() {
+        when {
+            importStatementValue.isEmpty() -> throw ConfigurationException("Import statement cannot be empty")
+            importStatementValue.trim()
+                .contains(" ") -> throw ConfigurationException("Import statement cannot contain white spaces")
+
+            !importStatementValue.matches(Regex("^package:[^/]+(/[^/]+)+.dart$")) -> throw ConfigurationException("Incorrect pattern of import statement. Should be \"package:path/to/extension.dart\"")
+        }
+        when {
+            extensionNameValue.isEmpty() -> throw ConfigurationException("Extension name cannot be empty")
+            extensionNameValue.trim()
+                .contains(" ") -> throw ConfigurationException("Extension name cannot contain white spaces")
+        }
+    }
+
     var importStatementValue: String
-        get() = importStatement.component.text
+        get() = importStatement.text
         set(value) {
-            importStatement.component.text = value
+            importStatement.text = value
         }
 
     var extensionNameValue: String
-        get() = extensionName.component.text
+        get() = extensionName.text
         set(value) {
-            extensionName.component.text = value
+            extensionName.text = value
         }
 
 }

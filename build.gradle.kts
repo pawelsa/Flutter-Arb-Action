@@ -23,8 +23,8 @@ intellij {
 tasks {
     // Set the JVM compatibility versions
     withType<JavaCompile> {
-        sourceCompatibility = Versions.java
         targetCompatibility = Versions.java
+        sourceCompatibility = Versions.java
     }
     withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
         kotlinOptions.jvmTarget = Versions.java

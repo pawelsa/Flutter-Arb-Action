@@ -16,8 +16,8 @@ class ArbPluginSettingsConfigurable(private val project: Project) : Configurable
     }
 
     override fun apply() {
+        panel.apply()
         project.getSettingsInstance().state.apply {
-            println(panel.importStatementValue.importToSettings())
             importPath = panel.importStatementValue.importToSettings()
             extensionName = panel.extensionNameValue
         }
