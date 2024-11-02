@@ -22,7 +22,12 @@
         ]]>
     </description>
 
-    <change-notes><![CDATA[<h2>1.0.2</h2>
+    <change-notes><![CDATA[<h2>1.0.4</h2>
+        <ul>
+          <li>Updated to support versions 2024.2+</li>
+        </ul>
+
+        <h2>1.0.2</h2>
         <ul>
           <li>Added support for sorting .arb files and moved entries are already sorted</li>
         </ul>
