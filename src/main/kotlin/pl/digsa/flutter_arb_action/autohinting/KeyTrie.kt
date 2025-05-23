@@ -20,12 +20,13 @@ class KeyTrie {
         val parts = prefix.split("(?=[A-Z])".toRegex())
 
         var currentPart = ""
-        for (part in parts) {
+        for ((index, part) in parts.withIndex()) {
             currentPart = part
             if (node.children.containsKey(part)) {
                 node = node.children[part]!!
                 currentPart = ""
             } else {
+                if (index < parts.lastIndex) return emptySet()
                 break
             }
         }

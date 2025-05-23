@@ -39,21 +39,22 @@ class TranslationKeyDialog(project: Project, keyTrie: KeyTrie) : DialogWrapper(p
         })
 
         textField.setFocusTraversalKeys(KeyboardFocusManager.FORWARD_TRAVERSAL_KEYS, emptySet())
-//todo zrobić tak że jeśli jest hint, ale nie jest zaznaczony i ktoś kliknie tab to powinno go zaakceptować, albo automatycznie jak użytkownik wpisuje to zaznaczać pierwszy hint
         textField.addKeyListener(object : KeyAdapter() {
             override fun keyPressed(e: KeyEvent) {
-                println(KeyEvent.getKeyText(e.keyCode))
                 when (e.keyCode) {
                     KeyEvent.VK_DOWN -> navigateSuggestions(1)
                     KeyEvent.VK_UP -> navigateSuggestions(-1)
-                    KeyEvent.VK_ENTER, KeyEvent.VK_TAB -> {
-                        e.consume()
+                    KeyEvent.VK_TAB -> {
                         acceptSuggestion()
+                        e.consume()
                     }
+
+                    KeyEvent.VK_ENTER -> doOKAction()
                 }
             }
         })
 
+        suggestionList.setFocusTraversalKeys(KeyboardFocusManager.FORWARD_TRAVERSAL_KEYS, emptySet())
         suggestionList.addListSelectionListener {
             if (!suggestionList.isSelectionEmpty) {
                 selectedIndex = suggestionList.selectedIndex
@@ -62,8 +63,8 @@ class TranslationKeyDialog(project: Project, keyTrie: KeyTrie) : DialogWrapper(p
         suggestionList.addKeyListener(object : KeyAdapter() {
             override fun keyPressed(e: KeyEvent) {
                 if (e.keyCode == KeyEvent.VK_ENTER || e.keyCode == KeyEvent.VK_TAB) {
-                    e.consume()
                     acceptSuggestion()
+                    e.consume()
                 }
             }
         })
@@ -78,13 +79,22 @@ class TranslationKeyDialog(project: Project, keyTrie: KeyTrie) : DialogWrapper(p
     }
 
     private fun acceptSuggestion() {
-        if (selectedIndex in 0 until model.size) {
-            val input = textField.text
-            val nextPart = suggestionList.selectedValue
-            textField.text = input + nextPart.removePrefix(input) // Append missing part
-            selectedIndex = -1
-            updateSuggestions()
+        val input = textField.text
+        val hint = when {
+            selectedIndex in 0 until model.size -> suggestionList.selectedValue
+            selectedIndex == -1 && !suggestionList.isEmpty -> suggestionList.getModel().getElementAt(0)
+            else -> return
         }
+
+        val parts = input.split("(?=[A-Z])".toRegex())
+        val lastPart = parts.lastOrNull()
+        textField.text = when {
+            lastPart == null -> hint
+            hint.startsWith(lastPart) -> input + hint.drop(lastPart.length)
+            else -> input + hint
+        }
+        selectedIndex = -1
+        updateSuggestions()
     }
 
     private fun updateSuggestions() {
@@ -98,9 +108,7 @@ class TranslationKeyDialog(project: Project, keyTrie: KeyTrie) : DialogWrapper(p
         }
 
         val suggestNextParts = suggestNextParts(input, trie)
-        suggestNextParts.firstOrNull()?.let {
-            textField.hint = it
-        }
+        textField.hint = suggestNextParts.firstOrNull()
         suggestNextParts.forEach { model.addElement(it) }
     }
 

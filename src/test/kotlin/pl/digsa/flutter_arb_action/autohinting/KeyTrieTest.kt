@@ -20,6 +20,21 @@ class KeyTrieTest {
     }
 
     @Test
+    fun `should return empty when first parts seem correct, but are doubled`() {
+        val input = listOf(
+            "searchDialogTitle",
+            "searchSheetTitle",
+            "appbar",
+            "appbarTitle",
+            "search"
+        )
+        val tree = KeyTrie()
+        input.forEach(tree::insert)
+
+        assert(tree.getNextSuggestions("searchDD") == emptyList<String>())
+    }
+
+    @Test
     fun `should return correctly all first parts of keys and next part of given word`() {
         val input = listOf(
             "searchDialogTitle",
