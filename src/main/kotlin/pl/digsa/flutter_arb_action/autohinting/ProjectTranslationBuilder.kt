@@ -9,19 +9,15 @@ import com.intellij.psi.PsiManager
 object ProjectTranslationBuilder {
 
     fun getTrie(project: Project, file: VirtualFile): KeyTrie {
-        val arbFile = PsiManager.getInstance(project).findFile(file)?.let { if (it is JsonFile) it else null }
-        val autocompletionTree = mutableSetOf<String>()
-        val topLevelValue = arbFile?.topLevelValue
-        if (topLevelValue is JsonObject) {
-            autocompletionTree.addAll(topLevelValue.propertyList.map { it.name })
-        }
+        val arbFile = PsiManager.getInstance(project).findFile(file) as? JsonFile
+        val jsonObject = arbFile?.topLevelValue as? JsonObject ?: return KeyTrie()
+
+        val arbKeys = jsonObject.propertyList
+            .map { it.name }
+            .filter { !it.startsWith("@") }
 
         val trie = KeyTrie()
-        for (key in autocompletionTree) {
-            trie.insert(key)
-        }
-
-        println("✅ Trie updated for ${file.name} in project ${project.name} - ${trie.keyExists("home")}")
+        arbKeys.forEach(trie::insert)
         return trie
     }
 }

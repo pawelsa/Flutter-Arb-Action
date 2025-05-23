@@ -13,12 +13,12 @@ import javax.swing.DefaultListModel
 import javax.swing.JComponent
 import javax.swing.JPanel
 import javax.swing.JScrollPane
+import javax.swing.event.DocumentEvent
 
-class TranslationKeyDialog(project: Project, keyTrie: KeyTrie) : DialogWrapper(project) {
+class TranslationKeyDialog(project: Project, private val trie: KeyTrie) : DialogWrapper(project) {
 
     private val textField = HintTextField(20)
     private val suggestionList = JBList<String>()
-    private val trie = keyTrie
     private val model = DefaultListModel<String>()
     private var selectedIndex = -1
 
@@ -29,12 +29,20 @@ class TranslationKeyDialog(project: Project, keyTrie: KeyTrie) : DialogWrapper(p
     }
 
     private fun setupAutocomplete() {
-        textField.document.addDocumentListener(object : DocumentAdapter() {
-            override fun textChanged(p0: javax.swing.event.DocumentEvent) {
-                updateSuggestions()
-            }
-        })
+        addTextFieldListener()
+        addTextFieldKeyListener()
 
+        addSuggestionListSelectionListener()
+        addSuggestionListKeyListener()
+    }
+
+    private fun addTextFieldListener() {
+        textField.document.addDocumentListener(object : DocumentAdapter() {
+            override fun textChanged(p0: DocumentEvent) = updateSuggestions()
+        })
+    }
+
+    private fun addTextFieldKeyListener() {
         textField.setFocusTraversalKeys(KeyboardFocusManager.FORWARD_TRAVERSAL_KEYS, emptySet())
         textField.addKeyListener(object : KeyAdapter() {
             override fun keyPressed(e: KeyEvent) {
@@ -48,28 +56,16 @@ class TranslationKeyDialog(project: Project, keyTrie: KeyTrie) : DialogWrapper(p
                         navigateSuggestions(-1)
                         e.consume()
                     }
+
                     KeyEvent.VK_TAB -> {
                         acceptSuggestion()
                         e.consume()
                     }
 
-                    KeyEvent.VK_ENTER -> doOKAction()
-                }
-            }
-        })
-
-        suggestionList.setFocusTraversalKeys(KeyboardFocusManager.FORWARD_TRAVERSAL_KEYS, emptySet())
-        suggestionList.addListSelectionListener {
-            if (!suggestionList.isSelectionEmpty) {
-                selectedIndex = suggestionList.selectedIndex
-//                textField.hint = suggestionList.selectedValue
-            }
-        }
-        suggestionList.addKeyListener(object : KeyAdapter() {
-            override fun keyPressed(e: KeyEvent) {
-                if (e.keyCode == KeyEvent.VK_ENTER || e.keyCode == KeyEvent.VK_TAB) {
-                    acceptSuggestion()
-                    e.consume()
+                    KeyEvent.VK_ENTER -> {
+                        doOKAction()
+                        e.consume()
+                    }
                 }
             }
         })
@@ -81,14 +77,43 @@ class TranslationKeyDialog(project: Project, keyTrie: KeyTrie) : DialogWrapper(p
         selectedIndex = (selectedIndex + direction).coerceIn(0, model.size - 1)
         suggestionList.selectedIndex = selectedIndex
         suggestionList.ensureIndexIsVisible(selectedIndex)
-        textField.hint = suggestionList.selectedValue
+        updateHint()
+    }
+
+    private fun addSuggestionListSelectionListener() {
+        suggestionList.addListSelectionListener {
+            selectedIndex = when {
+                !suggestionList.isSelectionEmpty -> suggestionList.selectedIndex
+                else -> -1
+            }
+        }
+    }
+
+    private fun addSuggestionListKeyListener() {
+        suggestionList.setFocusTraversalKeys(KeyboardFocusManager.FORWARD_TRAVERSAL_KEYS, emptySet())
+        suggestionList.addKeyListener(object : KeyAdapter() {
+            override fun keyPressed(e: KeyEvent) {
+                if (e.keyCode == KeyEvent.VK_ENTER || e.keyCode == KeyEvent.VK_TAB) {
+                    acceptSuggestion()
+                    e.consume()
+                }
+            }
+        })
+    }
+
+    private fun updateHint() {
+        textField.hint = when {
+            selectedIndex in 0 until model.size -> suggestionList.selectedValue
+            model.size > 0 -> model.getElementAt(0)
+            else -> null
+        }
     }
 
     private fun acceptSuggestion() {
         val input = textField.text
         val hint = when {
             selectedIndex in 0 until model.size -> suggestionList.selectedValue
-            selectedIndex == -1 && !suggestionList.isEmpty -> suggestionList.getModel().getElementAt(0)
+            selectedIndex == -1 && !suggestionList.isEmpty -> model.getElementAt(0)
             else -> return
         }
 
@@ -102,14 +127,18 @@ class TranslationKeyDialog(project: Project, keyTrie: KeyTrie) : DialogWrapper(p
         val input = textField.text
         model.clear()
 
-        when {
-            trie.keyExists(input) -> setErrorText("Key '$input' already exists!")
-            else -> setErrorText(null)
+        if (input.isEmpty()) {
+            textField.hint = null
+            setErrorText(null)
+            return
         }
 
+        setErrorText(if (trie.keyExists(input)) "Key '$input' already exists!" else null)
+
         val suggestNextParts = trie.getNextSuggestions(input)
-        textField.hint = suggestNextParts.firstOrNull()
         suggestNextParts.forEach { model.addElement(it) }
+        selectedIndex = -1
+        updateHint()
     }
 
     override fun createCenterPanel(): JComponent {
