@@ -1,6 +1,7 @@
 package pl.digsa.flutter_arb_action.autohinting
 
 import com.intellij.ui.JBColor
+import pl.digsa.flutter_arb_action.utils.getRestOfHintToShow
 import java.awt.Graphics
 import java.awt.Graphics2D
 import java.awt.RenderingHints
@@ -9,6 +10,12 @@ import javax.swing.JTextField
 
 class HintTextField(columns: Int) : JTextField(columns) {
     var hint: String? = null
+        set(value) {
+            if (value != field) {
+                field = value
+                repaint()
+            }
+        }
 
     override fun paintComponent(graphics: Graphics) {
         super.paintComponent(graphics)
@@ -30,17 +37,5 @@ class HintTextField(columns: Int) : JTextField(columns) {
             21
         )
         graphics2D.dispose()
-    }
-}
-
-fun getRestOfHintToShow(enteredText: String, hint: String): String {
-    if (enteredText.isEmpty()) return hint
-
-    val parts = enteredText.split("(?=[A-Z])".toRegex())
-    val lastPart = parts.lastOrNull() ?: return hint
-
-    return when {
-        hint.startsWith(lastPart) -> hint.drop(lastPart.length)
-        else -> hint
     }
 }

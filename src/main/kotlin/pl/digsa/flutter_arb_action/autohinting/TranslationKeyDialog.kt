@@ -4,6 +4,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.ui.DocumentAdapter
 import com.intellij.ui.components.JBList
+import pl.digsa.flutter_arb_action.utils.getRestOfHintToShow
 import java.awt.BorderLayout
 import java.awt.KeyboardFocusManager
 import java.awt.event.KeyAdapter
@@ -27,10 +28,6 @@ class TranslationKeyDialog(project: Project, keyTrie: KeyTrie) : DialogWrapper(p
         setupAutocomplete()
     }
 
-    private fun suggestNextParts(input: String, trie: KeyTrie): List<String> {
-        return trie.getNextSuggestions(input)
-    }
-
     private fun setupAutocomplete() {
         textField.document.addDocumentListener(object : DocumentAdapter() {
             override fun textChanged(p0: javax.swing.event.DocumentEvent) {
@@ -42,8 +39,15 @@ class TranslationKeyDialog(project: Project, keyTrie: KeyTrie) : DialogWrapper(p
         textField.addKeyListener(object : KeyAdapter() {
             override fun keyPressed(e: KeyEvent) {
                 when (e.keyCode) {
-                    KeyEvent.VK_DOWN -> navigateSuggestions(1)
-                    KeyEvent.VK_UP -> navigateSuggestions(-1)
+                    KeyEvent.VK_DOWN -> {
+                        navigateSuggestions(1)
+                        e.consume()
+                    }
+
+                    KeyEvent.VK_UP -> {
+                        navigateSuggestions(-1)
+                        e.consume()
+                    }
                     KeyEvent.VK_TAB -> {
                         acceptSuggestion()
                         e.consume()
@@ -58,6 +62,7 @@ class TranslationKeyDialog(project: Project, keyTrie: KeyTrie) : DialogWrapper(p
         suggestionList.addListSelectionListener {
             if (!suggestionList.isSelectionEmpty) {
                 selectedIndex = suggestionList.selectedIndex
+//                textField.hint = suggestionList.selectedValue
             }
         }
         suggestionList.addKeyListener(object : KeyAdapter() {
@@ -76,6 +81,7 @@ class TranslationKeyDialog(project: Project, keyTrie: KeyTrie) : DialogWrapper(p
         selectedIndex = (selectedIndex + direction).coerceIn(0, model.size - 1)
         suggestionList.selectedIndex = selectedIndex
         suggestionList.ensureIndexIsVisible(selectedIndex)
+        textField.hint = suggestionList.selectedValue
     }
 
     private fun acceptSuggestion() {
@@ -86,13 +92,8 @@ class TranslationKeyDialog(project: Project, keyTrie: KeyTrie) : DialogWrapper(p
             else -> return
         }
 
-        val parts = input.split("(?=[A-Z])".toRegex())
-        val lastPart = parts.lastOrNull()
-        textField.text = when {
-            lastPart == null -> hint
-            hint.startsWith(lastPart) -> input + hint.drop(lastPart.length)
-            else -> input + hint
-        }
+        val toAppend = getRestOfHintToShow(input, hint)
+        textField.text = input + toAppend
         selectedIndex = -1
         updateSuggestions()
     }
@@ -101,13 +102,12 @@ class TranslationKeyDialog(project: Project, keyTrie: KeyTrie) : DialogWrapper(p
         val input = textField.text
         model.clear()
 
-        if (trie.keyExists(input)) {
-            setErrorText("Key '$input' already exists!")
-        } else {
-            setErrorText(null)
+        when {
+            trie.keyExists(input) -> setErrorText("Key '$input' already exists!")
+            else -> setErrorText(null)
         }
 
-        val suggestNextParts = suggestNextParts(input, trie)
+        val suggestNextParts = trie.getNextSuggestions(input)
         textField.hint = suggestNextParts.firstOrNull()
         suggestNextParts.forEach { model.addElement(it) }
     }
