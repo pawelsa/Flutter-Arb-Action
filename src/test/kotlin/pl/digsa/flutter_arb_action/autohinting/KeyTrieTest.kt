@@ -1,4 +1,4 @@
-package pl.digsa.flutter_arb_action.autohinting2
+package pl.digsa.flutter_arb_action.autohinting
 
 import org.junit.Test
 
@@ -17,6 +17,21 @@ class KeyTrieTest {
         input.forEach(tree::insert)
 
         assert(tree.getNextSuggestions("") == listOf("search", "appbar"))
+    }
+
+    @Test
+    fun `should return correctly all first parts of keys and next part of given word`() {
+        val input = listOf(
+            "searchDialogTitle",
+            "searchSheetTitle",
+            "search"
+        )
+        val tree = KeyTrie()
+        input.forEach(tree::insert)
+
+        assert(tree.keyExists("search"))
+        assert(tree.getNextSuggestions("sea") == listOf("search"))
+        assert(tree.getNextSuggestions("search") == listOf("Dialog", "Sheet"))
     }
 
     @Test
@@ -63,7 +78,7 @@ class KeyTrieTest {
         val tree = KeyTrie()
         input.forEach(tree::insert)
 
-//        assert(tree.getNextSuggestions("sea") == listOf("search"))
+        assert(tree.getNextSuggestions("sea") == listOf("search"))
         assert(tree.getNextSuggestions("search") == listOf("Personnel", "Medical"))
         assert(tree.getNextSuggestions("searchP") == listOf("Personnel"))
         assert(tree.getNextSuggestions("searchPersonnel").also { println(it) } == listOf("Pesel", "Profession"))

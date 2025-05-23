@@ -1,4 +1,4 @@
-package pl.digsa.flutter_arb_action.autohinting2
+package pl.digsa.flutter_arb_action.autohinting
 
 class KeyTrie {
     private val root = TrieNode()

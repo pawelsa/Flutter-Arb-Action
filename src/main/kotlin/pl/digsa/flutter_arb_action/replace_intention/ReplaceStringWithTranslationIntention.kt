@@ -17,12 +17,12 @@ import com.jetbrains.lang.dart.util.DartElementGenerator
 import org.jetbrains.yaml.psi.YAMLFile
 import org.jetbrains.yaml.psi.YAMLMapping
 import pl.digsa.flutter_arb_action.*
-import pl.digsa.flutter_arb_action.autohinting2.TranslationKeyDialog
+import pl.digsa.flutter_arb_action.autohinting.ProjectTranslationBuilder
+import pl.digsa.flutter_arb_action.autohinting.TranslationKeyDialog
 import pl.digsa.flutter_arb_action.settings.ArbPluginSettingsState
 import pl.digsa.flutter_arb_action.utils.reformatJsonFile
 
 
-@Suppress("IntentionDescriptionNotFoundInspection")
 class ReplaceStringWithTranslationIntention : PsiElementBaseIntentionAction(), IntentionAction {
     override fun getFamilyName(): String = "Flutter resources"
 
@@ -208,13 +208,10 @@ class ReplaceStringWithTranslationIntention : PsiElementBaseIntentionAction(), I
     }
 
     private fun Project.getNewVariableName(): String? {
-        val arbFile = getArbFileOrNull()
-        val autocompletionTree = mutableSetOf<String>()
-        val topLevelValue = arbFile?.topLevelValue
-        if (topLevelValue is JsonObject) {
-            autocompletionTree.addAll(topLevelValue.propertyList.map { it.name })
-        }
-        val dialog = TranslationKeyDialog(this, autocompletionTree)
+        val file = getArbFileOrNull()?.virtualFile ?: return null
+        val trie = ProjectTranslationBuilder.getTrie(this, file) // myArbFile is the VirtualFile reference
+
+        val dialog = TranslationKeyDialog(this, trie)
         dialog.beforeShowCallback()
         val isGenerate = dialog.showAndGet()
         return if (isGenerate) dialog.getResult()?.trim() else null

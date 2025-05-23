@@ -59,7 +59,6 @@
         </intentionAction>
 
         <projectService serviceImplementation="pl.digsa.flutter_arb_action.settings.ArbPluginSettingsState"/>
-        <projectService serviceImplementation="pl.digsa.flutter_arb_action.autohinting.ArbService"/>
 
         <projectConfigurable
                 parentId="tools"

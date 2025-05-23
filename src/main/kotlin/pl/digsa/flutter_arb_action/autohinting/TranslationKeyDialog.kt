@@ -1,10 +1,9 @@
-package pl.digsa.flutter_arb_action.autohinting2
+package pl.digsa.flutter_arb_action.autohinting
 
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.ui.DocumentAdapter
 import com.intellij.ui.components.JBList
-import pl.digsa.flutter_arb_action.autohinting.HintTextField
 import java.awt.BorderLayout
 import java.awt.KeyboardFocusManager
 import java.awt.event.KeyAdapter
@@ -14,11 +13,11 @@ import javax.swing.JComponent
 import javax.swing.JPanel
 import javax.swing.JScrollPane
 
-class TranslationKeyDialog(project: Project, existingKeys: Set<String>) : DialogWrapper(project) {
+class TranslationKeyDialog(project: Project, keyTrie: KeyTrie) : DialogWrapper(project) {
 
     private val textField = HintTextField(20)
     private val suggestionList = JBList<String>()
-    private val trie = buildTrieFromKeys(existingKeys)
+    private val trie = keyTrie
     private val model = DefaultListModel<String>()
     private var selectedIndex = -1
 
@@ -26,12 +25,6 @@ class TranslationKeyDialog(project: Project, existingKeys: Set<String>) : Dialog
         title = "Enter Translation Key"
         init()
         setupAutocomplete()
-    }
-
-    private fun buildTrieFromKeys(keys: Set<String>): KeyTrie {
-        val trie = KeyTrie()
-        keys.forEach { trie.insert(it) }
-        return trie
     }
 
     private fun suggestNextParts(input: String, trie: KeyTrie): List<String> {

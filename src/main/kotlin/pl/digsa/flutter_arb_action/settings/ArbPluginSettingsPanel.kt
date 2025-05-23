@@ -23,7 +23,6 @@ class ArbPluginSettingsPanel {
             row {
                 extensionName = JTextField()
                 cell(extensionName).label("Name of the extension parameter", LabelPosition.TOP)
-
             }
         }
     }
