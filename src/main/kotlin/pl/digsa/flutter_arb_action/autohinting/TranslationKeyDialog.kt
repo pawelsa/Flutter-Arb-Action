@@ -17,10 +17,9 @@ import javax.swing.event.DocumentEvent
 
 class TranslationKeyDialog(project: Project, private val trie: KeyTrie) : DialogWrapper(project) {
 
-    private val textField = HintTextField(20)
-    private val suggestionList = JBList<String>()
+    private val textField = HintTextField()
     private val model = DefaultListModel<String>()
-    private var selectedIndex = -1
+    private val suggestionList = JBList<String>(model)
 
     init {
         title = "Enter Translation Key"
@@ -72,20 +71,17 @@ class TranslationKeyDialog(project: Project, private val trie: KeyTrie) : Dialog
     }
 
     private fun navigateSuggestions(direction: Int) {
-        if (model.size == 0) return
+        if (model.isEmpty) return
 
-        selectedIndex = (selectedIndex + direction).coerceIn(0, model.size - 1)
-        suggestionList.selectedIndex = selectedIndex
-        suggestionList.ensureIndexIsVisible(selectedIndex)
+        val newIndex = (suggestionList.selectedIndex + direction).coerceIn(0, model.size - 1)
+        suggestionList.selectedIndex = newIndex
+        suggestionList.ensureIndexIsVisible(newIndex)
         updateHint()
     }
 
     private fun addSuggestionListSelectionListener() {
         suggestionList.addListSelectionListener {
-            selectedIndex = when {
-                !suggestionList.isSelectionEmpty -> suggestionList.selectedIndex
-                else -> -1
-            }
+            updateHint()
         }
     }
 
@@ -102,24 +98,19 @@ class TranslationKeyDialog(project: Project, private val trie: KeyTrie) : Dialog
     }
 
     private fun updateHint() {
-        textField.hint = when {
-            selectedIndex in 0 until model.size -> suggestionList.selectedValue
-            model.size > 0 -> model.getElementAt(0)
-            else -> null
-        }
+        textField.hint = suggestionList.selectedValue
+            ?: model.takeIf { !suggestionList.isEmpty }?.getElementAt(0)
     }
 
     private fun acceptSuggestion() {
         val input = textField.text
-        val hint = when {
-            selectedIndex in 0 until model.size -> suggestionList.selectedValue
-            selectedIndex == -1 && !suggestionList.isEmpty -> model.getElementAt(0)
-            else -> return
-        }
+        val hint = suggestionList.selectedValue
+            ?: model.takeIf { !suggestionList.isEmpty }?.getElementAt(0)
+            ?: return
 
         val toAppend = getRestOfHintToShow(input, hint)
         textField.text = input + toAppend
-        selectedIndex = -1
+        suggestionList.clearSelection()
         updateSuggestions()
     }
 
@@ -137,17 +128,13 @@ class TranslationKeyDialog(project: Project, private val trie: KeyTrie) : Dialog
 
         val suggestNextParts = trie.getNextSuggestions(input)
         suggestNextParts.forEach { model.addElement(it) }
-        selectedIndex = -1
+        suggestionList.clearSelection()
         updateHint()
     }
 
-    override fun createCenterPanel(): JComponent {
-        val panel = JPanel(BorderLayout())
-        panel.add(textField, BorderLayout.NORTH)
-        suggestionList.model = model
-        panel.add(JScrollPane(suggestionList), BorderLayout.CENTER)
-        textField.requestFocusInWindow()
-        return panel
+    override fun createCenterPanel(): JComponent = JPanel(BorderLayout()).apply {
+        add(textField, BorderLayout.NORTH)
+        add(JScrollPane(suggestionList), BorderLayout.CENTER)
     }
 
     override fun getPreferredFocusedComponent(): JComponent = textField

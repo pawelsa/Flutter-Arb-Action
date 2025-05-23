@@ -8,7 +8,7 @@ import java.awt.RenderingHints
 import javax.swing.JTextField
 
 
-class HintTextField(columns: Int) : JTextField(columns) {
+class HintTextField() : JTextField() {
     var hint: String? = null
         set(value) {
             if (value != field) {
