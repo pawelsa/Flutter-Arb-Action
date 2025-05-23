@@ -1,11 +1,13 @@
 package pl.digsa.flutter_arb_action.autohinting
 
+import pl.digsa.flutter_arb_action.splitCamelCase
+
 class KeyTrie {
     private val root = TrieNode()
 
     fun insert(key: String) {
         var node = root
-        val parts = key.split("(?=[A-Z])".toRegex()) // Split camelCase
+        val parts = key.splitCamelCase()
 
         for (part in parts) {
             node = node.children.computeIfAbsent(part) { TrieNode() }
@@ -17,21 +19,21 @@ class KeyTrie {
         var node = root
         if (prefix.isEmpty()) return node.children.keys
 
-        val parts = prefix.split("(?=[A-Z])".toRegex())
+        val parts = prefix.splitCamelCase()
 
-        var currentPart = ""
+        var incompletePrefix = ""
         for ((index, part) in parts.withIndex()) {
-            currentPart = part
             if (node.children.containsKey(part)) {
                 node = node.children[part]!!
-                currentPart = ""
+                incompletePrefix = ""
             } else {
+                incompletePrefix = part
                 if (index < parts.lastIndex) return emptySet()
                 break
             }
         }
 
-        return node.children.keys.filter { it.startsWith(currentPart, ignoreCase = true) }.toSet()
+        return node.children.keys.filter { it.startsWith(incompletePrefix, ignoreCase = true) }.toSet()
     }
 
     fun getNextSuggestions(input: String): List<String> {
@@ -40,7 +42,7 @@ class KeyTrie {
 
     fun keyExists(key: String): Boolean {
         var node = root
-        val parts = key.split("(?=[A-Z])".toRegex())
+        val parts = key.splitCamelCase()
 
         for (part in parts) {
             node = node.children[part] ?: return false

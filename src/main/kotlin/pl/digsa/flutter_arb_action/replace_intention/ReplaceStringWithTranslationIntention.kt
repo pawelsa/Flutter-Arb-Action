@@ -37,7 +37,7 @@ class ReplaceStringWithTranslationIntention : PsiElementBaseIntentionAction(), I
     private fun PsiElement.findBuildContextInParentOrNull(): DartSimpleFormalParameter? {
         val methodDeclaration = PsiTreeUtil.getParentOfType(this, DartMethodDeclaration::class.java)
         return methodDeclaration?.formalParameterList?.normalFormalParameterList?.firstOrNull {
-            it.simpleFormalParameter?.type?.simpleType?.text == "BuildContext"
+            it.simpleFormalParameter?.type?.simpleType?.text == BUILD_CONTEXT
         }?.simpleFormalParameter
     }
 
@@ -62,12 +62,10 @@ class ReplaceStringWithTranslationIntention : PsiElementBaseIntentionAction(), I
         refactorArguments: RefactorArguments
     ) = writeFile {
         addPropertyToArbFile(arbContent, refactorArguments.variableName, refactorArguments.arbValue)
-        if (refactorArguments.arbTemplate != null) {
-            addPropertyToArbFile(arbContent, refactorArguments.arbTemplateName, refactorArguments.arbTemplate)
+        refactorArguments.arbTemplate?.let {
+            addPropertyToArbFile(arbContent, refactorArguments.arbTemplateName, it)
         }
-        editor?.let {
-            reformatJsonFile(this, it, arbContent)
-        }
+        editor?.let { reformatJsonFile(this, it, arbContent) }
     }
 
     private fun getRefactorArguments(
@@ -112,7 +110,6 @@ class ReplaceStringWithTranslationIntention : PsiElementBaseIntentionAction(), I
         return RefactorArguments(arbValue, arbTemplateValue, variableName, methodParameters)
     }
 
-
     private fun Project.addPropertyToArbFile(
         jsonObject: JsonObject,
         resourceName: String,
@@ -153,13 +150,14 @@ class ReplaceStringWithTranslationIntention : PsiElementBaseIntentionAction(), I
     private fun Project.getArbObjectOrNull(): JsonObject? {
         val intlConfig = firstFileByName<YAMLFile>("l10n.yaml") ?: return null
         val arbFileName = getArbFileNameFromIntlConfig(intlConfig) ?: return null
-        return firstFileByName<JsonFile>(arbFileName)?.topLevelValue?.let { if (it is JsonObject) it else null }
+        return firstFileByName<JsonFile>(arbFileName)?.topLevelValue as? JsonObject
     }
 
     private fun getArbFileNameFromIntlConfig(intlConfig: YAMLFile): String? {
         val yamlProperties = (intlConfig.documents.firstOrNull()?.topLevelValue as YAMLMapping).keyValues
-        val templateFile = yamlProperties.firstOrNull { it.keyText == "template-arb-file" }?.valueText ?: return null
-        val templateDir = yamlProperties.firstOrNull { it.keyText == "arb-dir" }?.valueText ?: return null
+        val templateFile =
+            yamlProperties.firstOrNull { it.keyText == TEMPLATE_ARBITRARY_FILE }?.valueText ?: return null
+        val templateDir = yamlProperties.firstOrNull { it.keyText == ARB_DIR }?.valueText ?: return null
         return "$templateDir/$templateFile"
     }
 
@@ -225,6 +223,12 @@ class ReplaceStringWithTranslationIntention : PsiElementBaseIntentionAction(), I
 
     override fun startInWriteAction(): Boolean = false
 
+
+    companion object {
+        private const val BUILD_CONTEXT = "BuildContext"
+        private const val TEMPLATE_ARBITRARY_FILE = "template-arb-file"
+        private const val ARB_DIR = "arb-dir"
+    }
 }
 
 data class RefactorArguments(

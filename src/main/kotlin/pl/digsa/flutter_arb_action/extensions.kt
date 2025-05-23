@@ -11,11 +11,6 @@ import com.jetbrains.lang.dart.psi.DartExpression
 import com.jetbrains.lang.dart.psi.DartStringLiteralExpression
 import com.jetbrains.lang.dart.util.DartElementGenerator
 
-inline fun <reified R> Sequence<*>.firstIsInstanceOrNull(): R? {
-    for (element in this) if (element is R) return element
-    return null
-}
-
 inline fun <reified T : PsiFile> Project.firstFileByName(name: String): T? {
     val virtualFile = guessProjectDir()?.findFileByRelativePath(name) ?: return null
     return PsiManager.getInstance(this).findFile(virtualFile)?.let { if (it is T) it else null }
@@ -47,3 +42,5 @@ inline fun PsiElement.iterateOverSiblings(action: (PsiElement) -> Unit) {
 }
 
 internal fun String.ignoreToolsSymbol() = if (startsWith("@")) drop(1) else this
+
+internal fun String.splitCamelCase() = split("(?=[A-Z])".toRegex())

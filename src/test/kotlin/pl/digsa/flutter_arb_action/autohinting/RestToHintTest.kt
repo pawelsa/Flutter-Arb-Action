@@ -1,6 +1,7 @@
 package pl.digsa.flutter_arb_action.autohinting
 
 import org.junit.Test
+import pl.digsa.flutter_arb_action.utils.getRestOfHintToShow
 
 class RestToHintTest {
     @Test
