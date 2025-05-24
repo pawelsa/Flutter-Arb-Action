@@ -6,29 +6,23 @@ import com.intellij.json.psi.JsonFile
 import com.intellij.json.psi.JsonObject
 import com.intellij.json.psi.JsonProperty
 import com.intellij.json.psi.JsonPsiUtil
-import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.ui.ValidationInfo
-import com.intellij.openapi.ui.validation.DialogValidation
 import com.intellij.psi.PsiElement
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.psi.util.childrenOfType
 import com.intellij.psi.util.parentOfType
-import com.intellij.ui.dsl.builder.*
 import com.jetbrains.lang.dart.psi.*
 import com.jetbrains.lang.dart.util.DartElementGenerator
 import org.jetbrains.yaml.psi.YAMLFile
 import org.jetbrains.yaml.psi.YAMLMapping
 import pl.digsa.flutter_arb_action.*
-import pl.digsa.flutter_arb_action.autohinting.ArbService
-import pl.digsa.flutter_arb_action.autohinting.AutohintTextField
+import pl.digsa.flutter_arb_action.autohinting.ProjectTranslationBuilder
+import pl.digsa.flutter_arb_action.autohinting.TranslationKeyDialog
 import pl.digsa.flutter_arb_action.settings.ArbPluginSettingsState
 import pl.digsa.flutter_arb_action.utils.reformatJsonFile
-import javax.swing.JTextField
 
 
-@Suppress("IntentionDescriptionNotFoundInspection")
 class ReplaceStringWithTranslationIntention : PsiElementBaseIntentionAction(), IntentionAction {
     override fun getFamilyName(): String = "Flutter resources"
 
@@ -43,7 +37,7 @@ class ReplaceStringWithTranslationIntention : PsiElementBaseIntentionAction(), I
     private fun PsiElement.findBuildContextInParentOrNull(): DartSimpleFormalParameter? {
         val methodDeclaration = PsiTreeUtil.getParentOfType(this, DartMethodDeclaration::class.java)
         return methodDeclaration?.formalParameterList?.normalFormalParameterList?.firstOrNull {
-            it.simpleFormalParameter?.type?.simpleType?.text == "BuildContext"
+            it.simpleFormalParameter?.type?.simpleType?.text == BUILD_CONTEXT
         }?.simpleFormalParameter
     }
 
@@ -68,12 +62,10 @@ class ReplaceStringWithTranslationIntention : PsiElementBaseIntentionAction(), I
         refactorArguments: RefactorArguments
     ) = writeFile {
         addPropertyToArbFile(arbContent, refactorArguments.variableName, refactorArguments.arbValue)
-        if (refactorArguments.arbTemplate != null) {
-            addPropertyToArbFile(arbContent, refactorArguments.arbTemplateName, refactorArguments.arbTemplate)
+        refactorArguments.arbTemplate?.let {
+            addPropertyToArbFile(arbContent, refactorArguments.arbTemplateName, it)
         }
-        editor?.let {
-            reformatJsonFile(this, it, arbContent)
-        }
+        editor?.let { reformatJsonFile(this, it, arbContent) }
     }
 
     private fun getRefactorArguments(
@@ -118,7 +110,6 @@ class ReplaceStringWithTranslationIntention : PsiElementBaseIntentionAction(), I
         return RefactorArguments(arbValue, arbTemplateValue, variableName, methodParameters)
     }
 
-
     private fun Project.addPropertyToArbFile(
         jsonObject: JsonObject,
         resourceName: String,
@@ -159,13 +150,14 @@ class ReplaceStringWithTranslationIntention : PsiElementBaseIntentionAction(), I
     private fun Project.getArbObjectOrNull(): JsonObject? {
         val intlConfig = firstFileByName<YAMLFile>("l10n.yaml") ?: return null
         val arbFileName = getArbFileNameFromIntlConfig(intlConfig) ?: return null
-        return firstFileByName<JsonFile>(arbFileName)?.topLevelValue?.let { if (it is JsonObject) it else null }
+        return firstFileByName<JsonFile>(arbFileName)?.topLevelValue as? JsonObject
     }
 
     private fun getArbFileNameFromIntlConfig(intlConfig: YAMLFile): String? {
         val yamlProperties = (intlConfig.documents.firstOrNull()?.topLevelValue as YAMLMapping).keyValues
-        val templateFile = yamlProperties.firstOrNull { it.keyText == "template-arb-file" }?.valueText ?: return null
-        val templateDir = yamlProperties.firstOrNull { it.keyText == "arb-dir" }?.valueText ?: return null
+        val templateFile =
+            yamlProperties.firstOrNull { it.keyText == TEMPLATE_ARBITRARY_FILE }?.valueText ?: return null
+        val templateDir = yamlProperties.firstOrNull { it.keyText == ARB_DIR }?.valueText ?: return null
         return "$templateDir/$templateFile"
     }
 
@@ -214,38 +206,29 @@ class ReplaceStringWithTranslationIntention : PsiElementBaseIntentionAction(), I
     }
 
     private fun Project.getNewVariableName(): String? {
-        lateinit var resourceName: Cell<JTextField>
-        val autocompletionTree = service<ArbService>().autocompletionTree
-        val panel = panel {
-            row {
-                val autohintTextField = AutohintTextField(autocompletionTree)
-                resourceName =
-                    cell(autohintTextField).also {
-                        it.columns(
-                            COLUMNS_SHORT
-                        )
-                    }.label("Variable name", LabelPosition.TOP).focused().validation(object : DialogValidation {
-                        override fun validate(): ValidationInfo? {
-                            if (autohintTextField.text.isEmpty()) return ValidationInfo("Field cannot be empty")
-                            if (autohintTextField.text.trim()
-                                    .contains(" ")
-                            ) return ValidationInfo("Field cannot contain white spaces")
-                            if (autohintTextField.hint == autohintTextField.text.trim()) return ValidationInfo("Key with this name exists")
-                            return null
-                        }
+        val file = getArbFileOrNull()?.virtualFile ?: return null
+        val trie = ProjectTranslationBuilder.getTrie(this, file) // myArbFile is the VirtualFile reference
 
-                    })
-            }
-        }
+        val dialog = TranslationKeyDialog(this, trie)
+        dialog.beforeShowCallback()
+        val isGenerate = dialog.showAndGet()
+        return if (isGenerate) dialog.getResult()?.trim() else null
+    }
 
-        val popup = PanelDialog(panel, "Name arb variable")
-        popup.setOkText("Apply")
-        val isGenerate = popup.showAndGet()
-        return if (isGenerate) resourceName.component.text.trim() else null
+    private fun Project.getArbFileOrNull(): JsonFile? {
+        val intlConfig = firstFileByName<YAMLFile>("l10n.yaml") ?: return null
+        val arbFileName = getArbFileNameFromIntlConfig(intlConfig) ?: return null
+        return firstFileByName<JsonFile>(arbFileName)
     }
 
     override fun startInWriteAction(): Boolean = false
 
+
+    companion object {
+        private const val BUILD_CONTEXT = "BuildContext"
+        private const val TEMPLATE_ARBITRARY_FILE = "template-arb-file"
+        private const val ARB_DIR = "arb-dir"
+    }
 }
 
 data class RefactorArguments(

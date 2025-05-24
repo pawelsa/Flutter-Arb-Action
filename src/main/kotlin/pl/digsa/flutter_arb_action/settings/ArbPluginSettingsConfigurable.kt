@@ -25,7 +25,6 @@ class ArbPluginSettingsConfigurable(private val project: Project) : Configurable
 
     override fun reset() {
         project.getSettingsInstance().state.apply {
-            println(importPath.importToUi())
             panel.importStatementValue = importPath.importToUi()
             panel.extensionNameValue = extensionName
         }
