@@ -23,7 +23,6 @@ import pl.digsa.flutter_arb_action.autohinting.ProjectTranslationBuilder
 import pl.digsa.flutter_arb_action.autohinting.TranslationKeyDialog
 import pl.digsa.flutter_arb_action.utils.reformatJsonFile
 
-
 class ReplaceStringWithTranslationIntention : PsiElementBaseIntentionAction(), IntentionAction {
     override fun getFamilyName(): String = "Flutter resources"
 
