@@ -3,18 +3,10 @@ package pl.digsa.flutter_arb_action
 import com.intellij.json.psi.JsonElementGenerator
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.project.guessProjectDir
 import com.intellij.psi.PsiElement
-import com.intellij.psi.PsiFile
-import com.intellij.psi.PsiManager
 import com.jetbrains.lang.dart.psi.DartExpression
 import com.jetbrains.lang.dart.psi.DartStringLiteralExpression
 import com.jetbrains.lang.dart.util.DartElementGenerator
-
-inline fun <reified T : PsiFile> Project.firstFileByName(name: String): T? {
-    val virtualFile = guessProjectDir()?.findFileByRelativePath(name) ?: return null
-    return PsiManager.getInstance(this).findFile(virtualFile)?.let { if (it is T) it else null }
-}
 
 fun Project.createJsonProperty(
     resourceName: String,

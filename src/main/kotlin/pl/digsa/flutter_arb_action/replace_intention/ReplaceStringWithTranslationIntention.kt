@@ -8,7 +8,9 @@ import com.intellij.json.psi.JsonProperty
 import com.intellij.json.psi.JsonPsiUtil
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiElement
+import com.intellij.psi.PsiManager
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.psi.util.childrenOfType
 import com.intellij.psi.util.parentOfType
@@ -19,7 +21,6 @@ import org.jetbrains.yaml.psi.YAMLMapping
 import pl.digsa.flutter_arb_action.*
 import pl.digsa.flutter_arb_action.autohinting.ProjectTranslationBuilder
 import pl.digsa.flutter_arb_action.autohinting.TranslationKeyDialog
-import pl.digsa.flutter_arb_action.settings.ArbPluginSettingsState
 import pl.digsa.flutter_arb_action.utils.reformatJsonFile
 
 
@@ -42,18 +43,41 @@ class ReplaceStringWithTranslationIntention : PsiElementBaseIntentionAction(), I
     }
 
     override fun invoke(project: Project, editor: Editor?, element: PsiElement) {
+        editor ?: return
+
         val contextParameterName = element.findBuildContextInParentOrNull()?.componentName?.text ?: return
         val stringElementToReplace = element.findStringLiteralExpressionInParentOrNull() ?: return
-        val arbContent = project.getArbObjectOrNull() ?: return
+        val l10nProperties = project.getL10nProperties(editor.virtualFile ?: return) ?: return
 
-        val refactorArguments = getRefactorArguments(stringElementToReplace) ?: return
+        val variableName = project.getNewVariableName(l10nProperties.arbFile) ?: return
 
-        project.modifyArbFileContent(editor, arbContent, refactorArguments)
+        val refactorArguments = getRefactorArguments(stringElementToReplace, variableName) ?: return
 
-        val (import, extensionName) = project.readUserDefinedParametersSettings()
-        element.addImport(import)
-        val replacementReference = "$contextParameterName.$extensionName.${refactorArguments.variableWithParameters}"
+        val jsonFile = PsiManager.getInstance(project).findFile(l10nProperties.arbFile) as? JsonFile ?: return
+        val jsonObject = jsonFile.topLevelValue as? JsonObject ?: return
+        project.modifyArbFileContent(editor, jsonObject, refactorArguments)
+
+        element.addImport(l10nProperties.importPath)
+        val replacementReference =
+            "$contextParameterName.${l10nProperties.extensionName}.${refactorArguments.variableWithParameters}"
         stringElementToReplace.replaceWithNewReference(replacementReference)
+    }
+
+    private fun Project.getL10nProperties(currentFile: VirtualFile): L10nProperties? {
+        var dir = currentFile.parent
+        while (dir != null) {
+            val l10nFile = dir.findChild("l10n.yaml")
+            if (l10nFile != null && !l10nFile.isDirectory) {
+                val psiFile = PsiManager.getInstance(this).findFile(l10nFile) as? YAMLFile ?: return null
+                val yamlProperties = psiFile.documents.firstOrNull()?.topLevelValue as? YAMLMapping ?: return null
+                val yaml = L10nYamlProperties.fromYamlMapping(yamlProperties) ?: return null
+                val arbFile = dir.findFileByRelativePath(yaml.arbFilePath) ?: return null
+                return L10nProperties(arbFile, yaml.importPath, yaml.extensionName)
+            }
+            dir.findChild("pubspec.yaml")?.let { return null }
+            dir = dir.parent
+        }
+        return null
     }
 
     private fun Project.modifyArbFileContent(
@@ -70,9 +94,8 @@ class ReplaceStringWithTranslationIntention : PsiElementBaseIntentionAction(), I
 
     private fun getRefactorArguments(
         stringElementToReplace: DartStringLiteralExpression,
+        variableName: String
     ): RefactorArguments? {
-        val project = stringElementToReplace.project
-        val variableName = project.getNewVariableName() ?: return null
         var parameterCount = 1
         var arbValue = ""
         val parameters = mutableListOf<String>()
@@ -147,24 +170,8 @@ class ReplaceStringWithTranslationIntention : PsiElementBaseIntentionAction(), I
         }
     }
 
-    private fun Project.getArbObjectOrNull(): JsonObject? {
-        val intlConfig = firstFileByName<YAMLFile>("l10n.yaml") ?: return null
-        val arbFileName = getArbFileNameFromIntlConfig(intlConfig) ?: return null
-        return firstFileByName<JsonFile>(arbFileName)?.topLevelValue as? JsonObject
-    }
-
-    private fun getArbFileNameFromIntlConfig(intlConfig: YAMLFile): String? {
-        val yamlProperties = (intlConfig.documents.firstOrNull()?.topLevelValue as YAMLMapping).keyValues
-        val templateFile =
-            yamlProperties.firstOrNull { it.keyText == TEMPLATE_ARBITRARY_FILE }?.valueText ?: return null
-        val templateDir = yamlProperties.firstOrNull { it.keyText == ARB_DIR }?.valueText ?: return null
-        return "$templateDir/$templateFile"
-    }
-
-    private fun Project.readUserDefinedParametersSettings() =
-        getService(ArbPluginSettingsState::class.java).state
-
     private fun PsiElement.addImport(import: String): Unit = this.project.writeFile {
+        println(import)
         val dartFile = this.parentOfType<DartFile>() ?: return@writeFile
         val importStatements = dartFile.childrenOfType<DartImportStatement>()
         if (importStatements.any { it.text == import }) return@writeFile
@@ -205,33 +212,22 @@ class ReplaceStringWithTranslationIntention : PsiElementBaseIntentionAction(), I
         }
     }
 
-    private fun Project.getNewVariableName(): String? {
-        val file = getArbFileOrNull()?.virtualFile ?: return null
-        val trie = ProjectTranslationBuilder.getTrie(this, file) // myArbFile is the VirtualFile reference
-
+    private fun Project.getNewVariableName(arbFile: VirtualFile): String? {
+        val trie = ProjectTranslationBuilder.getTrie(this, arbFile)
         val dialog = TranslationKeyDialog(this, trie)
         dialog.beforeShowCallback()
         val isGenerate = dialog.showAndGet()
         return if (isGenerate) dialog.getResult()?.trim() else null
     }
 
-    private fun Project.getArbFileOrNull(): JsonFile? {
-        val intlConfig = firstFileByName<YAMLFile>("l10n.yaml") ?: return null
-        val arbFileName = getArbFileNameFromIntlConfig(intlConfig) ?: return null
-        return firstFileByName<JsonFile>(arbFileName)
-    }
-
     override fun startInWriteAction(): Boolean = false
-
 
     companion object {
         private const val BUILD_CONTEXT = "BuildContext"
-        private const val TEMPLATE_ARBITRARY_FILE = "template-arb-file"
-        private const val ARB_DIR = "arb-dir"
     }
 }
 
-data class RefactorArguments(
+private data class RefactorArguments(
     val arbValue: String,
     val arbTemplate: String?,
     val variableName: String,
@@ -240,3 +236,33 @@ data class RefactorArguments(
     val arbTemplateName = "@${variableName}"
     val variableWithParameters = "${variableName}${methodParameters}"
 }
+
+data class L10nYamlProperties(
+    val arbFilePath: String,
+    val importPath: String,
+    val extensionName: String,
+) {
+    companion object {
+        private const val TEMPLATE_ARBITRARY_FILE = "template-arb-file"
+        private const val ARB_DIR = "arb-dir"
+        private const val EXTENSION_IMPORT_PATH = "extension-import-path"
+        private const val EXTENSION_NAME = "extension-name"
+
+        fun fromYamlMapping(mapping: YAMLMapping): L10nYamlProperties? {
+            val keys = mapping.keyValues
+
+            val templateArbFile = keys.firstOrNull { it.keyText == TEMPLATE_ARBITRARY_FILE }?.valueText ?: return null
+            val arbDir = keys.firstOrNull { it.keyText == ARB_DIR }?.valueText ?: return null
+            val importPath = keys.firstOrNull { it.keyText == EXTENSION_IMPORT_PATH }?.valueText ?: return null
+            val extensionName = keys.firstOrNull { it.keyText == EXTENSION_NAME }?.valueText ?: return null
+
+            return L10nYamlProperties("$arbDir/$templateArbFile", "import \'$importPath\';", extensionName)
+        }
+    }
+}
+
+data class L10nProperties(
+    val arbFile: VirtualFile,
+    val importPath: String,
+    val extensionName: String,
+)
