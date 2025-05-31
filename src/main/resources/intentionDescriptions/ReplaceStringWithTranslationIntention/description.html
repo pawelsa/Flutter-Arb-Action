@@ -1,0 +1,22 @@
+<html>
+<body>
+<p>
+    Detects hardcoded string literals in Dart code and offers to move them to an ARB file for localization, replacing
+    them with a reference to the generated translation.
+</p>
+<p>
+    This intention helps you identify and refactor hardcoded user-facing strings, making your Flutter app ready for
+    internationalization by extracting them into ARB files and updating the code to use the appropriate translation
+    reference.
+</p>
+<p>Example before applying the intention:</p>
+<pre><code class="language-dart">
+Text('Hello world!')
+</code></pre>
+<p>Example after applying the intention:</p>
+<pre><code class="language-dart">
+Text(context.l10n.helloWorld)
+</code></pre>
+</body>
+</html>
+

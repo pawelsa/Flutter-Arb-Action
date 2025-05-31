@@ -11,7 +11,7 @@ import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.SelectionModel
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
-import com.intellij.psi.*
+import com.intellij.psi.PsiElement
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.refactoring.util.CommonRefactoringUtil
 import com.intellij.util.IncorrectOperationException
@@ -22,10 +22,6 @@ import pl.digsa.flutter_arb_action.utils.reformatJsonFile
 /** Slightly modified JsonSortPropertiesIntention [https://github.com/JetBrains/intellij-community/blob/master/json/src/com/intellij/json/intentions/JsonSortPropertiesIntention.kt]
  * Sorts correctly positions with @ at the beginning, so they are always after the main property
  * */
-@Suppress(
-    "IntentionDescriptionNotFoundInspection",
-    "UnstableApiUsage"
-)
 open class SortArbIntention : BaseElementAtCaretIntentionAction(), LightEditCompatible, DumbAware {
     override fun getText(): @Nls(capitalization = Nls.Capitalization.Sentence) String =
         "Sort arb properties"

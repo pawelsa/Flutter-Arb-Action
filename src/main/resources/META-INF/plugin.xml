@@ -17,12 +17,30 @@
         <![CDATA[
             <p><span style="font-size:16px"><strong>Intention to move string text to arb files</strong></span><br />
         <br />
-        On the first run, we should configure the plugin in <strong>Settings|Tools|Flutter Arb Action</strong>, where we need to provide<br />
-        a path to the import of the extension method, and the name of that method.</p>
+        On the first run, we should configure the plugin in <strong>l10n.yaml</strong> file, where we need to provide<br />
+        a path to the import of the extension method, and the name of that method.<br />
+
+        Example l10n.yaml file:</p>
+        <pre>
+        <code>
+        extension-import-path: package:lib/extensions/app_localizations.dart
+        extension-name: 'translations'
+        </code>
+        </pre>
+        <br />
+        <p>After that, we can use the intention to move string text to arb files.</p><br />
+        <p>We can also sort arb files.</p>
         ]]>
     </description>
 
-    <change-notes><![CDATA[<h2>1.0.4</h2>
+    <change-notes><![CDATA[<h2>2.0.0</h2>
+        <ul>
+          <li>New dialog for exporting variable name</li>
+          <li>Added support for multimodule projects</li>
+          <li>Plugin configuration moved to i10n.yaml file</li>
+        </ul>
+
+        <h2>1.0.4</h2>
         <ul>
           <li>Updated to support versions 2024.2+</li>
         </ul>
@@ -47,7 +65,6 @@
     <!-- Extension points defined by the plugin.
          Read more: https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
     <extensions defaultExtensionNs="com.intellij">
-
         <intentionAction>
             <className>pl.digsa.flutter_arb_action.replace_intention.ReplaceStringWithTranslationIntention</className>
             <category>Flutter resources</category>
@@ -57,6 +74,5 @@
             <className>pl.digsa.flutter_arb_action.sort.SortArbIntention</className>
             <category>Flutter resources</category>
         </intentionAction>
-
     </extensions>
 </idea-plugin>
