@@ -170,7 +170,6 @@ class ReplaceStringWithTranslationIntention : PsiElementBaseIntentionAction(), I
     }
 
     private fun PsiElement.addImport(import: String): Unit = this.project.writeFile {
-        println(import)
         val dartFile = this.parentOfType<DartFile>() ?: return@writeFile
         val importStatements = dartFile.childrenOfType<DartImportStatement>()
         if (importStatements.any { it.text == import }) return@writeFile
