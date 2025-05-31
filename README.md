@@ -26,6 +26,7 @@
 <li>Moves strings to arb file</li>
 <li>Supports interpolated string</li>
 <li>Simple completion system based on currently entered keys in arb file</li>
+<li>Sorts arb file</li>
 
 ## Compatibility
 
@@ -49,9 +50,9 @@ For Mac - <kbd>IntelliJ IDEA</kbd> > <kbd>Preferences</kbd> > <kbd>Plugins</kbd>
 
 <img width="640" alt="extension" src="./screenshots/extension.png">
 
-### Settings
+### Configuration (l10n.yaml)
 
-<img alt="settings" src="./screenshots/settings.png">
+<img alt="settings" src="./screenshots/configuration.png">
 
 ### Quick Fixes for String
 
