@@ -65,6 +65,14 @@
     <!-- Extension points defined by the plugin.
          Read more: https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
     <extensions defaultExtensionNs="com.intellij">
+        <postStartupActivity implementation="pl.digsa.flutter_arb_action.plugin_notifications.WhatsNewIn2_0"/>
+
+        <notificationGroup
+                id="Flutter Arb Action"
+                displayType="BALLOON"
+                isLogByDefault="true"
+        />
+
         <intentionAction>
             <className>pl.digsa.flutter_arb_action.replace_intention.ReplaceStringWithTranslationIntention</className>
             <category>Flutter resources</category>
