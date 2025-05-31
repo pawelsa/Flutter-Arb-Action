@@ -1,8 +1,8 @@
 @file:Suppress("ConstPropertyName")
 
 object ModuleConfig {
-    const val group = "pl.digsa"
-    const val version = "1.0.4"
+    const val id = "pl.digsa.flutter_arb_action"
+    const val version = "2.0.0"
 
     object IntellijPlugins {
         private object Versions {
@@ -11,9 +11,9 @@ object ModuleConfig {
             const val flutterIntl = "1.18.8-2024.2"
         }
 
-        private const val _dart = "Dart:${Versions.dart}"
-        private const val _flutterIntl = "com.localizely.flutter-intl:${Versions.flutterIntl}"
-        private const val _yaml = "org.jetbrains.plugins.yaml:${Versions.yaml}"
+        private val _dart = "Dart" to Versions.dart
+        private val _flutterIntl = "com.localizely.flutter-intl" to Versions.flutterIntl
+        private val _yaml = "org.jetbrains.plugins.yaml" to Versions.yaml
 
         val plugins = listOf(_dart, _flutterIntl, _yaml)
     }

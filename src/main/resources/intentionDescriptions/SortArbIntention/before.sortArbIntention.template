@@ -1,0 +1,10 @@
+{
+  "zebra": "Zebra",
+  "apple": "Apple",
+  "@zebra": {
+    "description": "Animal"
+  },
+  "@apple": {
+    "description": "Fruit"
+  }
+}

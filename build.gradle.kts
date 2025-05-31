@@ -1,47 +1,62 @@
+import org.jetbrains.intellij.platform.gradle.IntelliJPlatformType
+
 plugins {
     id("java")
     id("org.jetbrains.kotlin.jvm") version Versions.kotlin
-    id("org.jetbrains.intellij") version Versions.intellij
+    id("org.jetbrains.intellij.platform") version Versions.intellij
 }
 
 repositories {
     mavenCentral()
 }
 
-group = ModuleConfig.group
-version = ModuleConfig.version
+intellijPlatform {
+    pluginConfiguration {
+        id = ModuleConfig.id
+        version = ModuleConfig.version
 
-// Configure Gradle IntelliJ Plugin
-// Read more: https://plugins.jetbrains.com/docs/intellij/tools-gradle-intellij-plugin.html
-intellij {
-    version.set(Versions.Intellij.version)
-    type.set(Versions.Intellij.type) // Target IDE Platform
+        ideaVersion {
+            sinceBuild = Versions.Intellij.sinceBuild
+            untilBuild = Versions.Intellij.untilBuild
+        }
+    }
 
-    plugins.set(ModuleConfig.IntellijPlugins.plugins)
+    pluginVerification {
+        ides {
+            select {
+                types = listOf(IntelliJPlatformType.IntellijIdeaCommunity, IntelliJPlatformType.AndroidStudio)
+                sinceBuild = Versions.Intellij.sinceBuild
+                untilBuild = Versions.Intellij.untilBuild
+            }
+        }
+    }
+
+    publishing {
+        token = System.getenv("PUBLISH_TOKEN")
+    }
+
+    signing {
+        certificateChain = System.getenv("CERTIFICATE_CHAIN")
+        privateKey = System.getenv("PRIVATE_KEY")
+        password = System.getenv("PRIVATE_KEY_PASSWORD")
+    }
+}
+repositories {
+    mavenCentral()
+
+    intellijPlatform {
+        defaultRepositories()
+    }
 }
 
-tasks {
-    // Set the JVM compatibility versions
-    withType<JavaCompile> {
-        targetCompatibility = Versions.java
-        sourceCompatibility = Versions.java
-    }
-    withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-        kotlinOptions.jvmTarget = Versions.java
-    }
+dependencies {
+    intellijPlatform {
+        create(Versions.Intellij.type, Versions.Intellij.version)
 
-    patchPluginXml {
-        sinceBuild.set(Versions.Intellij.sinceBuild)
-        untilBuild.set(Versions.Intellij.untilBuild)
-    }
+        ModuleConfig.IntellijPlugins.plugins.forEach { (id, version) ->
+            plugin(id, version)
+        }
 
-    signPlugin {
-        certificateChain.set(System.getenv("CERTIFICATE_CHAIN"))
-        privateKey.set(System.getenv("PRIVATE_KEY"))
-        password.set(System.getenv("PRIVATE_KEY_PASSWORD"))
-    }
-
-    publishPlugin {
-        token.set(System.getenv("PUBLISH_TOKEN"))
+        jetbrainsRuntime()
     }
 }

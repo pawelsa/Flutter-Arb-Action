@@ -1,0 +1,40 @@
+<html>
+<body>
+<p>
+    Sorts properties in ARB files, ensuring that all keys are ordered alphabetically, with metadata keys (starting with
+    <code>@</code>) always placed after their corresponding main property.
+</p>
+<p>
+    This intention helps you keep your ARB files clean and organized, making it easier to maintain translations and
+    avoid merge conflicts. It automatically reorders the properties so that main keys come first, followed by their
+    metadata, improving readability and consistency across your localization files.
+</p>
+<p>Example before applying the intention:</p>
+<pre><code class="language-json">
+{
+  "zebra": "Zebra",
+  "apple": "Apple",
+  "@zebra": {
+    "description": "Animal"
+  },
+  "@apple": {
+    "description": "Fruit"
+  }
+}
+</code></pre>
+<p>Example after applying the intention:</p>
+<pre><code class="language-json">
+{
+  "apple": "Apple",
+  "@apple": {
+    "description": "Fruit"
+  },
+  "zebra": "Zebra",
+  "@zebra": {
+    "description": "Animal"
+  }
+}
+</code></pre>
+</body>
+</html>
+
