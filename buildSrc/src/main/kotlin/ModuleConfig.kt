@@ -2,7 +2,7 @@
 
 object ModuleConfig {
     const val id = "pl.digsa.flutter_arb_action"
-    const val version = "2.0.0"
+    const val version = "2.0.1"
 
     object IntellijPlugins {
         private object Versions {
