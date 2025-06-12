@@ -29,7 +29,11 @@ class ReplaceStringWithTranslationIntention : PsiElementBaseIntentionAction(), I
     override fun getText(): String = "Move to arb file"
 
     override fun isAvailable(project: Project, editor: Editor?, element: PsiElement): Boolean =
-        element.findStringLiteralExpressionInParentOrNull() != null && element.findBuildContextInParentOrNull() != null
+        element.findStringLiteralExpressionInParentOrNull() != null && element.findBuildContextInParentOrNull() != null && editor?.virtualFile?.let {
+            project.getL10nProperties(
+                it
+            )
+        } != null
 
     private fun PsiElement.findStringLiteralExpressionInParentOrNull(): DartStringLiteralExpression? =
         PsiTreeUtil.getParentOfType(this, DartStringLiteralExpression::class.java)

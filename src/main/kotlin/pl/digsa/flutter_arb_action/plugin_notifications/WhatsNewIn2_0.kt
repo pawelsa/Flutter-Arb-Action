@@ -10,7 +10,7 @@ import com.intellij.openapi.startup.ProjectActivity
 class WhatsNewIn2_0 : ProjectActivity {
     override suspend fun execute(project: Project) {
         val key = "flutter_arb_action.shown_2_0_0"
-        val properties = PropertiesComponent.getInstance(project)
+        val properties = PropertiesComponent.getInstance()
         if (!properties.getBoolean(key, false)) {
             NotificationGroupManager.getInstance()
                 .getNotificationGroup("Flutter Arb Action")
