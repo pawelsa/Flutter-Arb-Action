@@ -5,9 +5,9 @@ object Versions {
     const val intellij = "2.6.0"
 
     object Intellij {
-        const val version = "2024.2"
+        const val version = "2024.3"
         const val type = "IC"
-        const val sinceBuild = "242"
-        const val untilBuild = "243.*"
+        const val sinceBuild = "243"
+        const val untilBuild = "251.*"
     }
 }

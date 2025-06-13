@@ -53,6 +53,7 @@ dependencies {
     intellijPlatform {
         create(Versions.Intellij.type, Versions.Intellij.version)
 
+        bundledPlugin(ModuleConfig.IntellijPlugins.json)
         ModuleConfig.IntellijPlugins.plugins.forEach { (id, version) ->
             plugin(id, version)
         }
