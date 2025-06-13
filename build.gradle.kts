@@ -22,7 +22,6 @@ intellijPlatform {
     }
 
     pluginVerification {
-        cliPath = file("/Users/pawel/Downloads/verifier-cli-1.386-all.jar")
         ides {
             select {
                 types = listOf(IntelliJPlatformType.IntellijIdeaCommunity, IntelliJPlatformType.AndroidStudio)
