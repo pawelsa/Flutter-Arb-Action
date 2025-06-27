@@ -40,19 +40,35 @@ IntelliJ IDEA, Android Studio
 
 Or you could install it inside your IDE:
 
-For Windows & Linux - <kbd>File</kbd> > <kbd>Settings</kbd> > <kbd>Plugins</kbd> > <kbd>Marketplace</kbd> > <kbd>Search for "Flutter_arb_action"</kbd> > <kbd>Install Plugin</kbd> > <kbd>Restart IntelliJ IDEA</kbd>
+For Windows & Linux - <kbd>File</kbd> > <kbd>Settings</kbd> > <kbd>Plugins</kbd> > <kbd>Marketplace</kbd> > <kbd>Search
+for "Flutter_arb_action"</kbd> > <kbd>Install Plugin</kbd> > <kbd>Restart IntelliJ IDEA</kbd>
 
-For Mac - <kbd>IntelliJ IDEA</kbd> > <kbd>Preferences</kbd> > <kbd>Plugins</kbd> > <kbd>Marketplace</kbd> > <kbd>Search for "Flutter_arb_action"</kbd> > <kbd>Install Plugin</kbd>  > <kbd>Restart IntelliJ IDEA</kbd>
+For Mac - <kbd>IntelliJ IDEA</kbd> > <kbd>Preferences</kbd> > <kbd>Plugins</kbd> > <kbd>Marketplace</kbd> > <kbd>Search
+for "Flutter_arb_action"</kbd> > <kbd>Install Plugin</kbd>  > <kbd>Restart IntelliJ IDEA</kbd>
 
 ## Screenshots
 
 ### Extension
 
-<img width="640" alt="extension" src="./screenshots/extension.png">
+```dart
+import 'package:example/locale/app_localizations.dart';
+import 'package:flutter/material.dart';
+
+extension ContextExtension on BuildContext {
+  AppLocalizations get text => AppLocalizations.of(this)!;
+}
+```
 
 ### Configuration (l10n.yaml)
 
-<img alt="settings" src="./screenshots/configuration.png">
+```yaml
+arb-dir: lib/locale
+template-arb-file: intl_en.arb
+output-localization-file: app_localizations.dart
+synthetic-package: false
+extension-import-path: package:example/core/extensions/context_extensions.dart
+extension-name: text
+```
 
 ### Quick Fixes for String
 
