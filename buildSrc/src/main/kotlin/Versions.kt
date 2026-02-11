@@ -8,6 +8,6 @@ object Versions {
         const val version = "2024.3"
         const val type = "IC"
         const val sinceBuild = "243"
-        const val untilBuild = "251.*"
+        const val untilBuild = "260.*"
     }
 }
